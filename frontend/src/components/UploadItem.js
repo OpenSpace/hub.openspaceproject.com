@@ -61,13 +61,18 @@ function UploadItem({ config }) {
     if (!name) {
       return;
     }
-    const resp = await APIService.ValidateItemName(name);
-    if (resp.error) {
-      setName('');
-      setNameError(resp.error);
-      throw new Error(resp.error);
+    try {
+      const resp = await APIService.ValidateItemName(name);
+      if (resp.error) {
+        setNameError(resp.error);
+        throw new Error(resp.error);
+      } else {
+        setNameError('');
+      }
+    } catch (err) {
+      setNameError('Item name already exists. Please choose a different name.');
+      console.log(err);
     }
-    setName(name);
   };
 
   const [license, setLicense] = useState('');
