@@ -2,7 +2,7 @@
   {
     "upload": true,
     "signin": true,
-    "versions": ["0.20.1", "0.20.0", "0.19.2", "0.19.1", "0.19.0", "0.18.2", "0.18.1", "0.18.0", "0.17.2"],
+    "versions": ["0.21.2", "0.21.1", "0.21.0", "0.20.1", "0.20.0", "0.19.2", "0.19.1", "0.19.0", "0.18.2", "0.18.1", "0.18.0", "0.17.2"],
     "itemTypes": ["asset", "profile", "recording", "webpanel", "config"],
     "licenses": ["CC BY", "CC BY-SA", "CC BY-NC", "CC BY-NC-SA", "CC BY-ND", "CC BY-NC-ND", "CC0", "MIT", "Apache", "GPL", "LGPL", "BSD", "Proprietary"]
   }
