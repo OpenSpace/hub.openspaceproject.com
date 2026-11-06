@@ -1,0 +1,217 @@
+import { isAdmin, isAdminFieldLevel, isAdminOrSelf, isAdminOrSelfFieldLevel } from '@/Access'
+import { deleteUserContent, exportUserData } from '@/accounts/userData'
+import { verifyFirebaseToken } from '@/payload.config'
+import { withCors } from '@/withCors'
+import type { CollectionConfig, PayloadRequest, User } from 'payload'
+
+export const Users: CollectionConfig = {
+  slug: 'users',
+  admin: {
+    useAsTitle: 'email',
+  },
+  // auth: true,
+  access: {
+    read: () => true,
+    // Accounts are made by /api/register (local API, so this doesn't apply) or by admins;
+    // Payload's default would let any logged-in user create users through /api/users
+    create: isAdmin,
+    update: isAdminOrSelf,
+    // Users can delete their own account (GDPR); the hooks below erase what it owns
+    delete: isAdminOrSelf,
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, operation, req }) => {
+        // New accounts are never admins unless an admin or the server's own code (e.g.
+        // `yarn make-admin`) says so. Payload's first-user registration skips access checks,
+        // so without this whoever registered first on a fresh hub could pick the admin role
+        if (
+          operation === 'create' &&
+          req.payloadAPI !== 'local' &&
+          !req.user?.role?.includes('admin')
+        ) {
+          data.role = ['user']
+        }
+        return data
+      },
+    ],
+    beforeDelete: [deleteUserContent],
+  },
+  endpoints: [
+    {
+      path: '/me/export',
+      method: 'get',
+      handler: withCors(exportUserData),
+    },
+    // Password reset is off: Hub users log in through Firebase, and no email service is set
+    // up, so Payload would write reset links to the server log. These replace Payload's own
+    // routes (a collection's endpoints are matched first); admins reset passwords in the panel
+    ...['/forgot-password', '/reset-password'].map((path) => ({
+      path,
+      method: 'post' as const,
+      handler: withCors(async () =>
+        Response.json(
+          { message: 'Password reset is turned off. Ask an admin to reset your password.' },
+          { status: 403 },
+        ),
+      ),
+    })),
+  ],
+  auth: {
+    strategies: [
+      {
+        name: 'firebase',
+        authenticate: async ({ headers, payload }) => {
+          const authHeader = headers.get('authorization')
+          // console.log('authHeader', authHeader)
+          if (!authHeader?.startsWith('Bearer ')) return { user: null }
+
+          const idToken = authHeader.split('Bearer ')[1]
+
+          try {
+            // const decoded = await firebaseAdmin.auth().verifyIdToken(idToken)
+            const decodedToken = await verifyFirebaseToken(idToken)
+
+            const firebaseUID = decodedToken.uid
+            // console.log('firebaseUID', firebaseUID)
+            const users = await payload.find({
+              collection: 'users',
+              where: { firebaseUID: { equals: firebaseUID } },
+            })
+
+            if (users.docs.length > 0) {
+              return {
+                user: {
+                  collection: 'users',
+                  ...users.docs[0],
+                }
+              }
+            } else {
+              return { user: null }
+            }
+          } catch (err) {
+            console.error('Firebase token error:', err)
+            return { user: null }
+          }
+        },
+      },
+    ],
+  },
+  fields: [
+    {
+      name: 'role',
+      type: 'select',
+      options: ['admin', 'user'],
+      defaultValue: 'user',
+      hasMany: true,
+      required: true,
+      access: {
+        read: isAdminOrSelfFieldLevel,
+        // Admins only: otherwise users could make themselves admins
+        update: isAdminFieldLevel,
+      },
+    },
+    {
+      name: 'email',
+      type: 'text',
+      unique: true,
+      // required: true,
+      // Profiles are public, but emails are only for the user themselves and admins. Only
+      // admins change it: it comes from the Firebase login and is used to claim accounts
+      access: {
+        read: isAdminOrSelfFieldLevel,
+        update: isAdminFieldLevel,
+      },
+    },
+    {
+      name: 'firebaseUID',
+      type: 'text',
+      // required: true,
+      unique: true,
+      // admin: {
+      //   readOnly: true,
+      // },
+      access: {
+        read: () => false,
+        update: () => false,
+      },
+    },
+    {
+      name: 'name',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'username',
+      type: 'text',
+      required: true,
+      unique: true,
+    },
+    {
+      name: 'thumbnail',
+      type: 'upload',
+      relationTo: 'media',
+    },
+    {
+      name: 'link',
+      type: 'text',
+    },
+    {
+      // How other people can reach this user. Separate from `email`, which comes from the login
+      // and is used to claim accounts, so users can edit this one freely. Only logged-in users
+      // can read it (the API leaves it out for anonymous requests), so scrapers don't get it
+      name: 'contactEmail',
+      type: 'email',
+      access: {
+        read: ({ req: { user } }) => Boolean(user),
+      },
+    },
+    {
+      name: 'institution',
+      type: 'text',
+      defaultValue: 'OpenSpace',
+      required: true,
+    },
+    {
+      name: 'slackHandle',
+      type: 'text',
+      defaultValue: '',
+    },
+
+    {
+      name: 'items',
+      type: 'relationship',
+      relationTo: 'items',
+      hasMany: true,
+      // Kept in sync by the item hooks and the /favorite endpoint (local API)
+      access: {
+        read: () => true,
+        create: isAdminFieldLevel,
+        update: isAdminFieldLevel,
+      },
+    },
+    {
+      name: 'favorites',
+      type: 'relationship',
+      relationTo: 'items',
+      hasMany: true,
+      // Kept in sync by the item hooks and the /favorite endpoint (local API)
+      access: {
+        read: () => true,
+        create: isAdminFieldLevel,
+        update: isAdminFieldLevel,
+      },
+    },
+    {
+      name: 'password',
+      type: 'text',
+      required: false,
+      // admin: {
+      //   condition: ({ data }) => {
+      //     // Only show in admin UI if user has admin role
+      //     return data?.role?.includes('admin') || false
+      //   },
+      // },
+    },
+  ],
+}

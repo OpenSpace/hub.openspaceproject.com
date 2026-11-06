@@ -1,0 +1,528 @@
+import React, { useEffect, useState } from 'react';
+import {
+  IconDownload,
+  IconEdit,
+  IconHeart,
+  IconHeartFilled,
+  IconTrash,
+  IconFileImport,
+  IconMessage
+} from '@tabler/icons-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  ActionIcon,
+  Anchor,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Container,
+  Divider,
+  Grid,
+  Group,
+  Image,
+  Paper,
+  Select,
+  Stack,
+  Text,
+  Title,
+  Tooltip,
+  useMantineColorScheme,
+  useMantineTheme,
+} from '@mantine/core';
+import { BundleContents } from '@/components/BundleContents';
+import { ItemTypePlaceholder } from '@/components/ItemTypeIcon';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
+import { useOpenSpaceImport } from '@/hooks/useOpenSpaceImport';
+import { Item as ItemType, Tag, Version } from '@/types/items';
+import { User } from '@/types/users';
+import { getLicenseUrl } from '@/utils/licenseUtils';
+import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
+import { convertLinksToHtml } from '@/utils/textUtils';
+import { trackItem } from '@/utils/trackItem';
+
+const ItemDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { makeRequest } = useAuthenticatedRequest();
+  const { payloadUser, user, showFavoriteCounts, showDownloadCounts } = useAuth();
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const [item, setItem] = useState<ItemType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<User[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
+  const { importToOpenSpace } = useOpenSpaceImport();
+  const slackID = import.meta.env.VITE_SLACK_CHANNEL_ID;
+  const slackTeam = import.meta.env.VITE_SLACK_TEAM_ID;
+  useEffect(() => {
+    const fetchItem = async () => {
+      try {
+        const headers: Record<string, string> = {};
+        if (user) {
+          const token = await user.getIdToken();
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}/api/items/${id}`, {
+          headers,
+        });
+        if (!response.ok) {
+          if (response.status === 404 || response.status === 403) {
+            setError(
+              "This item doesn't exist, is unpublished, or you don't have permission to view it."
+            );
+          } else {
+            setError('Failed to load item. Please try again later.');
+          }
+          return;
+        }
+        const data = await response.json();
+        console.log(data);
+        setItem(data);
+        setSelectedVersion(data.currentVersion || null);
+        setFavorites(data.favoritedBy || []);
+      } catch (err) {
+        setError('Failed to load item. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItem();
+  }, [id, user]);
+
+  const handleFavorite = async () => {
+    try {
+      const response = await makeRequest(`/api/items/${id}/favorite`, {
+        method: 'POST',
+      });
+      setFavorites(response.favoritedBy);
+    } catch (err) {
+      console.error('Failed to update favorite status:', err);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!item) return;
+    if (!window.confirm(`Are you sure you want to delete "${item.title}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await makeRequest(`/api/items/${item.id}`, { method: 'DELETE' });
+      navigate('/items');
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+      setError('Failed to delete item. Please try again later.');
+    }
+  };
+
+  const handleDownloadAssetBundle = async () => {
+    const url = `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle?.url}`;
+    const filename = displayData.assetBundle?.filename || 'download';
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      if (item) trackItem(item.id, 'download');
+    } catch (err) {
+      console.error('Failed to download asset bundle:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container size="xl" py="xl">
+        <Text ta="center">Loading...</Text>
+      </Container>
+    );
+  }
+
+  if (error || !item) {
+    return (
+      <Container size="xl" py="xl">
+        <Stack align="center" gap="sm">
+          <Title order={3} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+            Item unavailable
+          </Title>
+          <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+            {error || 'Item not found'}
+          </Text>
+          <Button component={Link} to="/items" mt="sm">
+            Browse items
+          </Button>
+        </Stack>
+      </Container>
+    );
+  }
+
+  const isAuthor = payloadUser?.id === item.author?.id;
+  const displayData = selectedVersion?.snapshot || item;
+
+  return (
+    <Container size="xl" py="md">
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start">
+          <Stack gap="xs">
+            <Title order={1} size="h3">
+              {displayData.title}
+            </Title>
+            <Group gap="xs" wrap="wrap">
+              {sortTags(item.tags ?? []).map((tag: Tag) => (
+                <Badge key={tag.id} style={getTagStyle(tag.type)} size="sm">
+                  {getTagDisplayName(tag)}
+                </Badge>
+              ))}
+            </Group>
+          </Stack>
+        </Group>
+
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            <Stack gap="md">
+              <Paper
+                p="md"
+                withBorder
+                radius={12}
+                style={{
+                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  borderColor: 'rgba(162, 231, 251, 0.12)',
+                }}
+              >
+                <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+                  {displayData.image?.url ? (
+                    <Image
+                      src={`${import.meta.env.VITE_PAYLOAD_API_URL}/${displayData.image.url}`}
+                      alt={displayData.title}
+                      fit="contain"
+                      style={{ maxHeight: '350px', display: 'block' }}
+                    />
+                  ) : (
+                    <ItemTypePlaceholder
+                      type={displayData.type}
+                      height={350}
+                      iconSize={120}
+                      radius={theme.radius.sm}
+                    />
+                  )}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      padding: '8px',
+                      // Just above the image; anything higher pokes through modals (z-index 200)
+                      zIndex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Group gap={4} style={{ position: 'relative' }}>
+                      <ActionIcon
+                        variant="filled"
+                        color={favorites.some((f) => f.id === payloadUser?.id) ? 'red' : 'gray'}
+                        onClick={handleFavorite}
+                      >
+                        {favorites.some((f) => f.id === payloadUser?.id) ? (
+                          <IconHeartFilled size={16} />
+                        ) : (
+                          <IconHeart size={16} />
+                        )}
+                      </ActionIcon>
+                      {showFavoriteCounts && favorites.length > 0 && (
+                        <Text
+                          size="xs"
+                          style={{
+                            position: 'absolute',
+                            bottom: -4,
+                            right: -4,
+                            backgroundColor:
+                              colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                            padding: '2px 4px',
+                            borderRadius: '10px',
+                            border: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3]}`,
+                            minWidth: '16px',
+                            textAlign: 'center',
+                            lineHeight: 1,
+                            zIndex: 1,
+                          }}
+                        >
+                          {favorites.length}
+                        </Text>
+                      )}
+                    </Group>
+                  </div>
+                </div>
+              </Paper>
+
+              <Card
+                withBorder
+                p="md"
+                radius={12}
+                style={{
+                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  borderColor: 'rgba(162, 231, 251, 0.12)',
+                }}
+              >
+                <Text
+                  size="sm"
+                  c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[2]}
+                  dangerouslySetInnerHTML={{ __html: convertLinksToHtml(displayData.description) }}
+                />
+              </Card>
+
+              <BundleContents
+                filename={displayData.assetBundle?.filename}
+                filesize={displayData.assetBundle?.filesize}
+              />
+            </Stack>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Stack gap="md">
+              <Card
+                withBorder
+                p="xs"
+                radius={12}
+                style={{
+                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  borderColor: 'rgba(162, 231, 251, 0.12)',
+                }}
+              >
+                <Stack gap="xs">
+                  <Stack gap={2}>
+                    <Text
+                      size="xs"
+                      fw={500}
+                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+                    >
+                      Author
+                    </Text>
+                    <Anchor
+                      component={Link}
+                      to={`/profile/${item.author.id}`}
+                      size="xs"
+                      underline="always"
+                      style={{color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6]}}
+                    >
+                      {item.author.username}
+                    </Anchor>
+                  </Stack>
+                  <Divider size="xs" />
+                  <Stack gap={2}>
+                    <Text
+                      size="xs"
+                      fw={500}
+                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+                    >
+                      License
+                    </Text>
+                    {getLicenseUrl(displayData.license) ? (
+                      <Anchor
+                        href={getLicenseUrl(displayData.license)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        size="xs"
+                        style={{color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6]}}
+                      >
+                        {displayData.license}
+                      </Anchor>
+                    ) : (
+                      <Text
+                        size="xs"
+                        c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
+                      >
+                        {displayData.license}
+                      </Text>
+                    )}
+                  </Stack>
+                  <Divider size="xs" />
+                  <Stack gap={2}>
+                    <Text
+                      size="xs"
+                      fw={500}
+                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+                    >
+                      OpenSpace Version
+                    </Text>
+                    <Text
+                      size="xs"
+                      c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
+                    >
+                      {displayData.openspaceVersion}
+                    </Text>
+                  </Stack>
+                  <Divider size="xs" />
+                  <Stack gap={2}>
+                    <Text
+                      size="xs"
+                      fw={500}
+                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+                    >
+                      Last Update
+                    </Text>
+                    <Text
+                      size="xs"
+                      c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
+                    >
+                      {new Date(selectedVersion?.createdAt || item.updatedAt).toLocaleDateString()}
+                    </Text>
+                  </Stack>
+                  {showDownloadCounts && (
+                    <>
+                      <Divider size="xs" />
+                      <Stack gap={2}>
+                        <Text
+                          size="xs"
+                          fw={500}
+                          c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+                        >
+                          Downloads
+                        </Text>
+                        <Text
+                          size="xs"
+                          c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
+                        >
+                          {/* Downloads and imports are counted separately but shown as one number */}
+                          {((item.downloadCount ?? 0) + (item.importCount ?? 0)).toLocaleString()}
+                        </Text>
+                      </Stack>
+                    </>
+                  )}
+                </Stack>
+              </Card>
+
+              <Card
+                withBorder
+                p="xs"
+                radius={12}
+                style={{
+                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  borderColor: 'rgba(162, 231, 251, 0.12)',
+                }}
+              >
+                <Stack gap="xs">
+                  <Text
+                    size="xs"
+                    fw={500}
+                    c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+                  >
+                    Version
+                  </Text>
+                  <Select
+                    value={selectedVersion?.id}
+                    onChange={(value) => {
+                      const version =
+                        item.archives?.find((v) => v.id === value) || item.currentVersion;
+                      setSelectedVersion(version || null);
+                    }}
+                    data={[
+                      ...(item.currentVersion
+                        ? [
+                            {
+                              value: item.currentVersion.id,
+                              label: `Version ${item.currentVersion.version} (Latest) (${new Date(item.currentVersion.createdAt).toLocaleDateString()})`,
+                            },
+                          ]
+                        : []),
+                      ...(item.archives || []).map((version: Version) => ({
+                        value: version.id,
+                        label: `Version ${version.version} (${new Date(version.createdAt).toLocaleDateString()})`,
+                      })),
+                    ]}
+                    size="xs"
+                    disabled={!item.archives?.length && !item.currentVersion}
+                    placeholder="Select Version"
+                  />
+                  <Group mt="xs">
+                    <Button
+                      variant="light"
+                      size="xs"
+                      fullWidth
+                      leftSection={<IconDownload size={14} />}
+                      onClick={handleDownloadAssetBundle}
+                    >
+                      Download
+                    </Button>
+                    <Button
+                      variant="light"
+                      size="xs"
+                      fullWidth
+                      leftSection={<IconFileImport size={14} />}
+                      disabled={!displayData.assetBundle?.url}
+                      onClick={() =>
+                        importToOpenSpace(
+                          `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle?.url}`,
+                          displayData.type,
+                          displayData.title,
+                          displayData.assetBundle?.filename,
+                          displayData.assetBundle?.entryPath,
+                          item.id
+                        )
+                      }
+                    >
+                      Import
+                    </Button>
+                    <Button
+                      variant="light"
+                      size="xs"
+                      fullWidth
+                      leftSection={<IconMessage size={14} />}
+                      component="a"
+                      href={`slack://channel?team=${slackTeam}&id=${slackID}`}
+                    >
+                      Discuss on Slack
+                    </Button>
+                    {isAuthor && (
+                      <Button
+                        variant="light"
+                        size="xs"
+                        fullWidth
+                        leftSection={<IconEdit size={14} />}
+                        onClick={() => navigate(`/items/${id}/edit`)}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    {isAuthor && (
+                      <Button
+                        variant="light"
+                        color="red"
+                        size="xs"
+                        fullWidth
+                        leftSection={<IconTrash size={14} />}
+                        onClick={handleDelete}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </Group>
+                </Stack>
+              </Card>
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      </Stack>
+    </Container>
+  );
+};
+
+export default ItemDetailPage;
+
+const styles = {
+  authorLink: {
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
+};

@@ -1,34 +1,20 @@
 {
-  "name": "openspacehub",
-  "version": "1.0.0",
-  "description": "OpenSpace Hub",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "seed": "node ./config/seed.js",
-    "lint": "npx prettier . --check",
-    "lint-fix": "npx prettier . --write"
-  },
-  "author": "Abhay Garg",
-  "license": "ISC",
-  "dependencies": {
-    "axios": "^1.7.7",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "express-validator": "^7.2.0",
-    "firebase-admin": "^12.6.0",
-    "jsonwebtoken": "^9.0.2",
-    "moment": "^2.30.1",
-    "mongo-seeding": "^4.0.1",
-    "mongodb": "^6.10.0",
-    "mongoose": "^8.7.2",
-    "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
-    "sharp": "^0.33.5",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "unzipper": "^0.12.3"
-  }
+    "name": "openspace-hub",
+    "private": true,
+    "license": "MIT",
+    "scripts": {
+        "dev": "concurrently \"yarn dev:fe\" \"yarn dev:be\"",
+        "dev:fe": "cd hub-fe && yarn dev",
+        "dev:be": "cd hub-be && yarn dev",
+        "install:all": "yarn install && cd hub-fe && yarn install && cd ../hub-be && yarn install",
+        "build": "yarn build:fe && node scripts/copy-frontend.mjs && yarn build:be",
+        "build:fe": "cd hub-fe && yarn build",
+        "build:be": "cd hub-be && yarn build",
+        "build:local": "node scripts/build-frontend.mjs http://localhost:3000",
+        "build:remote": "node scripts/build-frontend.mjs http://hub.openspaceproject.com:3000",
+        "start": "cd hub-be && yarn start"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
 }

@@ -1,0 +1,4 @@
+/* Base styles */
+
+/* Fonts come from the visitor's own system (see fontFamily in theme.ts). No remote font imports:
+   loading fonts from Google Fonts or other CDNs sends every visitor's IP address to them */

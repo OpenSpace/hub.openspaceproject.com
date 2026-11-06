@@ -1,0 +1,252 @@
+[
+    {
+        "image": "https://picsum.photos/200/150?image=0",
+        "title": "Title 1",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 1",
+        "author": "Artist A",
+        "license": "CC BY",
+        "openSpaceVersion": "1.0",
+        "lastUpdate": "2023-01-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=1",
+        "title": "Title 2",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 2",
+        "author": "Photographer B",
+        "license": "CC BY-NC",
+        "openSpaceVersion": "1.1",
+        "lastUpdate": "2023-02-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=2",
+        "title": "Title 3",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 3",
+        "author": "Illustrator C",
+        "license": "CC BY-SA",
+        "openSpaceVersion": "1.2",
+        "lastUpdate": "2023-03-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=3",
+        "title": "Title 4",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 4",
+        "author": "Designer D",
+        "license": "CC BY-ND",
+        "openSpaceVersion": "1.3",
+        "lastUpdate": "2023-04-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=4",
+        "title": "Title 5",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 5",
+        "author": "Sculptor E",
+        "license": "CC BY",
+        "openSpaceVersion": "1.4",
+        "lastUpdate": "2023-05-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=5",
+        "title": "Title 6",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 6",
+        "author": "Artist F",
+        "license": "CC BY",
+        "openSpaceVersion": "1.5",
+        "lastUpdate": "2023-06-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=6",
+        "title": "Title 7",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 7",
+        "author": "Photographer G",
+        "license": "CC BY-NC",
+        "openSpaceVersion": "1.6",
+        "lastUpdate": "2023-07-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=7",
+        "title": "Title 8",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 8",
+        "author": "Illustrator H",
+        "license": "CC BY-SA",
+        "openSpaceVersion": "1.7",
+        "lastUpdate": "2023-08-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=8",
+        "title": "Title 9",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 9",
+        "author": "Designer I",
+        "license": "CC BY-ND",
+        "openSpaceVersion": "1.8",
+        "lastUpdate": "2023-09-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=9",
+        "title": "Title 10",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 10",
+        "author": "Sculptor J",
+        "license": "CC BY",
+        "openSpaceVersion": "1.9",
+        "lastUpdate": "2023-10-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=10",
+        "title": "Title 11",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 11",
+        "author": "Artist K",
+        "license": "CC BY",
+        "openSpaceVersion": "2.0",
+        "lastUpdate": "2023-11-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=11",
+        "title": "Title 12",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 12",
+        "author": "Photographer L",
+        "license": "CC BY-NC",
+        "openSpaceVersion": "2.1",
+        "lastUpdate": "2023-12-01T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=12",
+        "title": "Title 13",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 13",
+        "author": "Illustrator M",
+        "license": "CC BY-SA",
+        "openSpaceVersion": "2.2",
+        "lastUpdate": "2023-01-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=13",
+        "title": "Title 14",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 14",
+        "author": "Designer N",
+        "license": "CC BY-ND",
+        "openSpaceVersion": "2.3",
+        "lastUpdate": "2023-02-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=14",
+        "title": "Title 15",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 15",
+        "author": "Sculptor O",
+        "license": "CC BY",
+        "openSpaceVersion": "2.4",
+        "lastUpdate": "2023-03-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=15",
+        "title": "Title 16",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 16",
+        "author": "Artist P",
+        "license": "CC BY",
+        "openSpaceVersion": "2.5",
+        "lastUpdate": "2023-04-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=16",
+        "title": "Title 17",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 17",
+        "author": "Photographer Q",
+        "license": "CC BY-NC",
+        "openSpaceVersion": "2.6",
+        "lastUpdate": "2023-05-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=17",
+        "title": "Title 18",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 18",
+        "author": "Illustrator R",
+        "license": "CC BY-SA",
+        "openSpaceVersion": "2.7",
+        "lastUpdate": "2023-06-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=18",
+        "title": "Title 19",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 19",
+        "author": "Designer S",
+        "license": "CC BY-ND",
+        "openSpaceVersion": "2.8",
+        "lastUpdate": "2023-07-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=19",
+        "title": "Title 20",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 20",
+        "author": "Sculptor T",
+        "license": "CC BY",
+        "openSpaceVersion": "2.9",
+        "lastUpdate": "2023-08-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=20",
+        "title": "Title 21",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 21",
+        "author": "Artist U",
+        "license": "CC BY",
+        "openSpaceVersion": "3.0",
+        "lastUpdate": "2023-09-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=21",
+        "title": "Title 22",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 22",
+        "author": "Photographer V",
+        "license": "CC BY-NC",
+        "openSpaceVersion": "3.1",
+        "lastUpdate": "2023-10-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=22",
+        "title": "Title 23",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 23",
+        "author": "Illustrator W",
+        "license": "CC BY-SA",
+        "openSpaceVersion": "3.2",
+        "lastUpdate": "2023-11-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=23",
+        "title": "Title 24",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 24",
+        "author": "Designer X",
+        "license": "CC BY-ND",
+        "openSpaceVersion": "3.3",
+        "lastUpdate": "2023-12-15T00:00:00Z"
+    },
+    {
+        "image": "https://picsum.photos/200/150?image=24",
+        "title": "Title 25",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "type": "Type 25",
+        "author": "Sculptor Y",
+        "license": "CC BY",
+        "openSpaceVersion": "3.4",
+        "lastUpdate": "2024-01-15T00:00:00Z"
+    }
+]

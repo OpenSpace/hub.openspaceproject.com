@@ -1,0 +1,973 @@
+import { useEffect, useState } from 'react';
+import { IconAlertCircle, IconCheck, IconUpload, IconX } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Alert,
+  Button,
+  Card,
+  Code,
+  ComboboxItem,
+  FileInput,
+  Group,
+  Modal,
+  Paper,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+  Title,
+  useMantineColorScheme,
+  useMantineTheme,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
+import {
+  LOGIN_TO_UPLOAD_MESSAGE,
+  UPLOADS_DISABLED_MESSAGE,
+  useAuth,
+} from '../contexts/AuthContext';
+import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
+import { Item } from '../types/items';
+import { link } from 'fs/promises';
+import { ITEM_TYPE_LABELS } from '@/utils/tagUtils';
+import { fileTree, UPLOAD_INSTRUCTIONS } from '@/utils/uploadInstructions';
+
+interface ItemFormProps {
+  item?: Item;
+  isEdit?: boolean;
+}
+
+// Fallback options in case the CMS config isn't available
+const FALLBACK_TYPE_OPTIONS = Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+const FALLBACK_LICENSE_OPTIONS = [
+  { value: 'CC BY', label: 'CC BY' },
+  { value: 'CC BY-SA', label: 'CC BY-SA' },
+  { value: 'CC BY-NC', label: 'CC BY-NC' },
+  { value: 'CC BY-NC-SA', label: 'CC BY-NC-SA' },
+  { value: 'CC BY-ND', label: 'CC BY-ND' },
+  { value: 'CC BY-NC-ND', label: 'CC BY-NC-ND' },
+  { value: 'CC0', label: 'CC0' },
+  { value: 'MIT', label: 'MIT' },
+  { value: 'Apache', label: 'Apache' },
+  { value: 'GPL', label: 'GPL' },
+  { value: 'LGPL', label: 'LGPL' },
+  { value: 'BSD', label: 'BSD' },
+  { value: 'Proprietary', label: 'Proprietary' },
+];
+
+const FALLBACK_OPENSPACE_VERSIONS = [
+  { value: '0.20.1', label: '0.20.1' },
+  { value: '0.20.0', label: '0.20.0' },
+  { value: '0.19.2', label: '0.19.2' },
+  { value: '0.19.1', label: '0.19.1' },
+  { value: '0.19.0', label: '0.19.0' },
+  { value: '0.18.2', label: '0.18.2' },
+  { value: '0.18.1', label: '0.18.1' },
+  { value: '0.18.0', label: '0.18.0' },
+  { value: '0.17.2', label: '0.17.2' },
+];
+
+// Icon and text as one centered unit, for the file pickers' placeholder and chosen file name
+const UploadLabel = ({ children }: { children: React.ReactNode }) => (
+  <Group gap={6} justify="center" wrap="nowrap">
+    <IconUpload size={16} />
+    <span>{children}</span>
+  </Group>
+);
+
+const FileValue = ({ value }: { value: File | File[] | null }) => (
+  <UploadLabel>{Array.isArray(value) ? value.map((file) => file.name).join(', ') : value?.name}</UploadLabel>
+);
+
+export function ItemForm({ item, isEdit = false }: ItemFormProps) {
+  const navigate = useNavigate();
+  const { makeRequest } = useAuthenticatedRequest();
+  const { siteConfig, user, payloadUser, uploadsEnabled, loading: authLoading } = useAuth();
+  // Why files can't be uploaded right now, if they can't (the API enforces the same rules).
+  // Wait for auth to settle so logged-in users don't see the login message flash
+  const uploadBlockedReason = !uploadsEnabled
+    ? UPLOADS_DISABLED_MESSAGE
+    : !authLoading && !(user && payloadUser)
+      ? LOGIN_TO_UPLOAD_MESSAGE
+      : undefined;
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+
+  // Tall boxes for the two file pickers, with the placeholder or file name centered
+  const dropBoxStyle = {
+    height: 120,
+    minHeight: 120,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center' as const,
+  };
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    item?.image?.url ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${item.image.url}` : null
+  );
+  const [assetFile, setAssetFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [assetBundleId, setAssetBundleId] = useState<string | null>(item?.assetBundle?.id || null);
+  const [showVersionConfirm, setShowVersionConfirm] = useState(false);
+  const [pendingSubmitValues, setPendingSubmitValues] = useState<any>(null);
+  
+  const [filelabel, setFilelabel] = useState<string>('Asset Files');
+  const [fileAccepts, setFileAccepts] = useState<string>('Asset Files');
+  const [filePlaceholder, setFilePlaceholder] = useState<string>('Upload a file');
+  const [uploadType, setUploadType] = useState<string>(item?.type || 'asset');
+
+  // Prepare dropdown options from site config or use fallbacks
+  const typeOptions =
+    siteConfig?.config.itemTypes.map((type) => ({
+      value: type,
+      label: ITEM_TYPE_LABELS[type] || type,
+    })) || FALLBACK_TYPE_OPTIONS;
+  const licenseOptions =
+    siteConfig?.config.licenses.map((license) => ({ value: license, label: license })) ||
+    FALLBACK_LICENSE_OPTIONS;
+  const versionOptions =
+    siteConfig?.config.versions.map((version) => ({ value: version, label: version })) ||
+    FALLBACK_OPENSPACE_VERSIONS;
+
+  const form = useForm({
+    initialValues: {
+      title: item?.title || '',
+      description: item?.description || '',
+      type: item?.type || '',
+      license: item?.license || '',
+      openspaceVersion: item?.openspaceVersion || '',
+      // Holds the newly selected File, or the existing asset bundle id when editing
+      assetBundle: (item?.assetBundle?.id || null) as File | string | null,
+    },
+    validate: {
+      title: (value) => (value.trim().length > 0 ? null : 'Title is required'),
+      description: (value) => (value.trim().length > 0 ? null : 'Description is required'),
+      type: (value) => (value.trim().length > 0 ? null : 'Type is required'),
+      license: (value) => (value.trim().length > 0 ? null : 'License is required'),
+      openspaceVersion: (value) =>
+        value.trim().length > 0 ? null : 'OpenSpace Version is required',
+      assetBundle: (value) => (value ? null : 'A file is required to be loaded'),
+    },
+  });
+
+  // Update the asset bundle handler to just store the file without uploading
+  const handleAssetBundleUpload = (file: File | null) => {
+    setAssetFile(file);
+    form.setFieldValue('assetBundle', file ?? item?.assetBundle?.id ?? null);
+  };
+
+  //change the upload portion of the form based on type
+  const handleTypeChange = (_value: string | null, option: ComboboxItem | null) => {
+    console.log('2Selected type:', _value);
+    setUploadType(_value ?? '');
+    switch (_value) {
+      case 'asset':
+        setFilelabel('Asset or Zip');
+        setFileAccepts('.zip,.asset,.jasset');
+        setFilePlaceholder('Upload a .asset, a .jasset, or .zip file');
+        break;
+      case 'profile':
+        setFilelabel('Profile');
+        setFileAccepts('.profile');
+        setFilePlaceholder('Upload a .profile file');
+        break;
+      case 'recording':
+        setFilelabel('Recording File');
+        setFileAccepts('.osrec,.osrectxt');
+        setFilePlaceholder('Upload a .osrec or .osrectxt file');
+        break;
+      case 'webpanel':
+        setFilelabel('Web Panel Zip');
+        setFileAccepts('.zip,.html');
+        setFilePlaceholder('Upload a .zip or index.html file');
+        break;
+      case 'config':
+        setFilelabel('Config File');
+        setFileAccepts('.json,.zip');
+        setFilePlaceholder('Upload a .json or .zip file');
+        break;
+      case 'package':
+        setFilelabel('Package File');
+        setFileAccepts('.zip');
+        setFilePlaceholder('Upload a .zip file');
+        break;
+      case 'showcomposer':
+        setFilelabel('ShowComposer Panel Zip');
+        setFileAccepts('.zip');
+        setFilePlaceholder('Upload a .zip file');
+        break;
+      default:
+        setFilelabel('File Upload');
+        setFileAccepts('*/*');
+        setFilePlaceholder('Upload a file');
+        break;
+    }
+    return form.setFieldValue('type', option?.value || '');
+  }
+
+  // Handle image change and upload to media endpoint
+  const handleImageChange = (file: File | null) => {
+    setImageFile(file);
+
+    if (file) {
+      // Show notification for image upload
+      notifications.show({
+        id: 'image-preview',
+        title: 'Image Selected',
+        message: 'Preview is being generated...',
+        loading: true,
+        autoClose: false,
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+
+        // Update notification when preview is ready
+        notifications.update({
+          id: 'image-preview',
+          title: 'Image Preview Ready',
+          message: 'Image has been processed and is ready for upload.',
+          color: 'green',
+          icon: <IconCheck size={16} />,
+          loading: false,
+          autoClose: 3000,
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(
+        item?.image?.url ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${item.image.url}` : null
+      );
+    }
+  };
+
+  // Upload image to media endpoint and return the ID
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      notifications.show({
+        id: 'image-upload',
+        loading: true,
+        title: 'Uploading Image',
+        message: 'Uploading your image...',
+        autoClose: false,
+        withCloseButton: false,
+      });
+
+      // Create form data for image upload
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Add metadata as JSON string
+      const payload = {
+        alt: form.values.title || 'Item image',
+      };
+      formData.append('_payload', JSON.stringify(payload));
+
+      // Use fetch directly with FormData
+      const apiUrl = import.meta.env.VITE_PAYLOAD_API_URL;
+      const token = await user?.getIdToken();
+      const response = await fetch(`${apiUrl}/api/media`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Image upload response error:', errorText);
+        throw new Error(`Image upload failed with status ${response.status}: ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('responseData', responseData);
+      if (responseData && responseData.doc.id) {
+        notifications.update({
+          id: 'image-upload',
+          color: 'green',
+          title: 'Image Uploaded',
+          message: 'Your image has been uploaded successfully.',
+          icon: <IconCheck size={16} />,
+          loading: false,
+          autoClose: 5000,
+        });
+
+        return responseData.doc.id;
+      } else {
+        throw new Error('Image upload failed: No ID returned');
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
+
+      notifications.update({
+        id: 'image-upload',
+        color: 'red',
+        title: 'Image Upload Failed',
+        message: errorMessage,
+        icon: <IconX size={16} />,
+        loading: false,
+        autoClose: 5000,
+      });
+
+      throw err;
+    }
+  };
+
+  // Upload asset bundle and return the ID
+  const uploadAssetBundle = async (file: File, formValues: any): Promise<string | null> => {
+    try {
+      notifications.show({
+        id: 'asset-upload',
+        loading: true,
+        title: 'Uploading Asset Bundle',
+        message: 'Validating and uploading your asset bundle...',
+        autoClose: false,
+        withCloseButton: false,
+      });
+
+      // Create form data for asset bundle upload
+      const formData = new FormData();
+
+      // Add the file with the correct field name
+      formData.append('file', file);
+
+      // Add metadata as a JSON string
+      const payload = {
+        title: formValues.title,
+        type: formValues.type,
+      };
+
+      formData.append('_payload', JSON.stringify(payload));
+
+      // If editing, include the item ID
+      if (isEdit && item) {
+        formData.append('id', item.id);
+      }
+
+      console.log('Uploading asset bundle with payload:', payload);
+
+      // Log the FormData entries for debugging
+      for (const pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
+      // Use fetch directly instead of makeRequest to have more control
+      const apiUrl = import.meta.env.VITE_PAYLOAD_API_URL;
+      //   const token = await (await import('../contexts/AuthContext')).getIdToken();
+      const token = await user?.getIdToken();
+      const response = await fetch(`${apiUrl}/api/asset-bundles/validate-and-upload`, {
+        method: 'POST',
+        body: formData,
+        // Important: Don't set Content-Type header for FormData
+        headers: {
+          // Add authorization if needed
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        setError(`${errorText}`);
+        throw new Error(`Request failed with status ${response.status}: ${errorText}`);
+      }
+
+      const responseData = await response.json();
+
+      // Handle the response
+      if (responseData && responseData.id) {
+        notifications.update({
+          id: 'asset-upload',
+          color: 'green',
+          title: 'Asset Bundle Uploaded',
+          message: 'Your asset bundle has been validated and uploaded successfully.',
+          icon: <IconCheck size={16} />,
+          loading: false,
+          autoClose: 5000,
+        });
+
+        return responseData.id;
+      } else {
+        const errorMessage = responseData?.message || 'Asset bundle validation failed';
+        notifications.update({
+          id: 'asset-upload',
+          color: 'red',
+          title: 'Upload Failed',
+          message: errorMessage,
+          icon: <IconX size={16} />,
+          loading: false,
+          autoClose: 5000,
+        });
+
+        throw new Error(errorMessage);
+      }
+    } catch (err) {
+      console.error('Error uploading asset bundle:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload file';
+
+      notifications.update({
+        id: 'asset-upload',
+        color: 'red',
+        title: 'Upload Failed',
+        message: errorMessage,
+        icon: <IconX size={16} />,
+        loading: false,
+        autoClose: 5000,
+      });
+
+      throw err;
+    }
+  };
+
+  // Add this function to check if version will change
+  const willCreateNewVersion = (values: typeof form.values): boolean => {
+    if (!isEdit || !item) return false;
+
+    // Check if license changed
+    if (values.license !== item.license) return true;
+
+    // Check if asset bundle changed
+    if (assetFile) return true;
+
+    return false;
+  };
+
+  // Modify handleSubmit to check for version changes
+  const handleSubmit = async (values: typeof form.values) => {
+    // Check if this will create a new version
+    if (willCreateNewVersion(values)) {
+      setShowVersionConfirm(true);
+      setPendingSubmitValues(values);
+      return;
+    }
+    console.log('Submitting form with values:', values);
+    // Otherwise proceed with normal submission
+    await submitForm(values);
+  };
+
+  // Extract the actual submission logic to a separate function
+  const submitForm = async (values: typeof form.values) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      notifications.show({
+        id: 'form-submit',
+        loading: true,
+        title: 'Saving Item',
+        message: 'Please wait while we save your item...',
+        autoClose: false,
+        withCloseButton: false,
+      });
+
+      let currentAssetBundleId = assetBundleId;
+      let imageId = item?.image?.id || null;
+
+      // Upload asset bundle if a new file is selected
+      if (assetFile) {
+        try {
+          currentAssetBundleId = await uploadAssetBundle(assetFile, values);
+          if (!currentAssetBundleId) {
+            setError('Failed to upload asset bundle');
+            setLoading(false);
+            notifications.update({
+              id: 'form-submit',
+              color: 'red',
+              title: 'Submission Failed',
+              message: 'Failed to upload asset bundle',
+              icon: <IconX size={16} />,
+              loading: false,
+              autoClose: 5000,
+            });
+            return;
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to upload asset bundle');
+          setLoading(false);
+          notifications.update({
+            id: 'form-submit',
+            color: 'red',
+            title: 'Submission Failed',
+            message: 'Failed to upload asset bundle',
+            icon: <IconX size={16} />,
+            loading: false,
+            autoClose: 5000,
+          });
+          return;
+        }
+      }
+
+      // Upload image if a new file is selected
+      if (imageFile) {
+        try {
+          imageId = await uploadImage(imageFile);
+          if (!imageId) {
+            setError('Failed to upload image');
+            setLoading(false);
+            notifications.update({
+              id: 'form-submit',
+              color: 'red',
+              title: 'Submission Failed',
+              message: 'Failed to upload image',
+              icon: <IconX size={16} />,
+              loading: false,
+              autoClose: 5000,
+            });
+            return;
+          }
+        } catch (err) {
+          setError('Failed to upload image');
+          setLoading(false);
+          notifications.update({
+            id: 'form-submit',
+            color: 'red',
+            title: 'Submission Failed',
+            message: 'Failed to upload image',
+            icon: <IconX size={16} />,
+            loading: false,
+            autoClose: 5000,
+          });
+          return;
+        }
+      }
+
+      // Prepare JSON data for item creation/update
+      const jsonData: Record<string, any> = { ...values };
+
+      // Add asset bundle ID if available
+      if (currentAssetBundleId) {
+        jsonData.assetBundle = currentAssetBundleId;
+      }
+
+      // Add image ID if available
+      if (imageId) {
+        jsonData.image = imageId;
+      }
+      // Only on create: an edit (e.g. by an admin) must not hand the item to the editor
+      if (!isEdit) {
+        jsonData.author = payloadUser?.id;
+      }
+
+      // Make the request to create or update the item
+      const response = await makeRequest(isEdit && item ? `/api/items/${item.id}` : '/api/items', {
+        method: isEdit ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData),
+      });
+
+      // Update notification for success
+      notifications.update({
+        id: 'form-submit',
+        color: 'green',
+        title: isEdit ? 'Item Updated' : 'Item Created',
+        message: isEdit
+          ? 'Your item has been updated successfully.'
+          : 'Your item has been created successfully.',
+        icon: <IconCheck size={16} />,
+        loading: false,
+        autoClose: 5000,
+      });
+
+      // Navigate to the item detail page
+      navigate(`/items/${response.doc.id}`);
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      setError('Failed to save item. Please try again.');
+
+      // Update notification for error
+      notifications.update({
+        id: 'form-submit',
+        color: 'red',
+        title: 'Submission Failed',
+        message: 'Failed to save item. Please try again.',
+        icon: <IconX size={16} />,
+        loading: false,
+        autoClose: 5000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add this right before the return statement
+  useEffect(() => {
+    // Reset confirmation dialog when form values change
+    if (showVersionConfirm) {
+      setShowVersionConfirm(false);
+    }
+  }, [form.values, assetFile]);
+
+  // Instructions for the selected type. Until one is picked there's nothing to show yet, and
+  // some types (profile, recording) need no more than the file itself
+  const fileInstructions = UPLOAD_INSTRUCTIONS[form.values.type];
+  const fallbackInstruction = form.values.type
+    ? 'No special instructions for this type: just upload your file.'
+    : 'Select an item type to get instructions.';
+
+  return (
+    <Paper
+      shadow="sm"
+      p="xl"
+      radius="md"
+      withBorder
+      style={{
+        backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+        borderColor: colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3],
+      }}
+    >
+      <Title order={2} mb="lg" c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+        {isEdit ? 'Edit Item' : 'Upload New Item'}
+      </Title>
+
+      {error && (
+        <Alert
+          icon={<IconAlertCircle size={16} />}
+          color="red"
+          mb="md"
+          styles={{
+            root: {
+              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : undefined,
+              borderColor: colorScheme === 'dark' ? theme.colors.red[7] : undefined,
+            },
+            message: {
+              color: colorScheme === 'dark' ? theme.white : undefined,
+            },
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+
+      {uploadBlockedReason && (
+        <Alert icon={<IconAlertCircle size={16} />} color="blue" mb="md">
+          {/* Editing already requires login, so here the reason is uploads being switched off */}
+          {isEdit
+            ? `${uploadBlockedReason}. You can still edit the details, but not replace the files.`
+            : uploadBlockedReason}
+        </Alert>
+      )}
+
+      {/* Add version information display */}
+      {isEdit && item?.currentVersion && (
+        <Alert
+          color="blue"
+          mb="md"
+          styles={{
+            root: {
+              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : undefined,
+              borderColor: colorScheme === 'dark' ? theme.colors.blue[7] : undefined,
+            },
+            message: {
+              color: colorScheme === 'dark' ? theme.white : undefined,
+            },
+          }}
+        >
+          <Group>
+            <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+              Current Version: {item.currentVersion.version || '1'}
+            </Text>
+            {item.archives && item.archives.length > 0 && (
+              <Text
+                size="sm"
+                c={colorScheme === 'dark' ? theme.colors.gray[0] : theme.colors.dark[5]}
+              >
+                Previous versions: {item.archives.length}
+              </Text>
+            )}
+          </Group>
+        </Alert>
+      )}
+
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md">
+          <TextInput
+            label="Title"
+            placeholder="Enter item title"
+            required
+            styles={{
+              label: {
+                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+              },
+            }}
+            {...form.getInputProps('title')}
+          />
+
+          <Textarea
+            label="Description"
+            placeholder="Enter item description"
+            minRows={4}
+            required
+            styles={{
+              label: {
+                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+              },
+            }}
+            {...form.getInputProps('description')}
+          />
+          <Group>
+            <Select
+              label="Type"
+              placeholder="Select item type"
+              required
+              data={typeOptions}
+              searchable
+              maxDropdownHeight={400}
+              styles={{
+                label: {
+                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+                },
+              }}
+              {...form.getInputProps('type')}
+              onChange={handleTypeChange}
+            />
+
+            <Select
+              label="License"
+              placeholder="Select license"
+              required
+              data={licenseOptions}
+              searchable
+              styles={{
+                label: {
+                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+                },
+              }}
+              {...form.getInputProps('license')}
+            />
+
+            <Select
+              label="OpenSpace Version"
+              placeholder="Select OpenSpace version"
+              required
+              data={versionOptions}
+              searchable
+              styles={{
+                label: {
+                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+                },
+              }}
+              {...form.getInputProps('openspaceVersion')}
+            />
+          </Group>
+          {/* Image and asset file side by side (stacked on narrow screens) */}
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <Stack gap="xs">
+              <FileInput
+                label="Image"
+                placeholder={<UploadLabel>Upload an image</UploadLabel>}
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={Boolean(uploadBlockedReason)}
+                description={uploadBlockedReason}
+                valueComponent={FileValue}
+                styles={{
+                  label: {
+                    color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+                  },
+                  input: dropBoxStyle,
+                }}
+              />
+
+              {imagePreview && (
+                <div>
+                  <Text
+                    size="sm"
+                    mb="xs"
+                    c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+                  >
+                    Image Preview:
+                  </Text>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '200px',
+                      objectFit: 'contain',
+                      border: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3]}`,
+                      borderRadius: theme.radius.sm,
+                    }}
+                  />
+                </div>
+              )}
+            </Stack>
+
+            <Stack gap="xs">
+              <FileInput
+                label={filelabel}
+                placeholder={<UploadLabel>{filePlaceholder}</UploadLabel>}
+                accept={fileAccepts}
+                value={assetFile}
+                onChange={handleAssetBundleUpload}
+                error={form.errors.assetBundle}
+                disabled={Boolean(uploadBlockedReason)}
+                description={uploadBlockedReason}
+                valueComponent={FileValue}
+                required
+                styles={{
+                  label: {
+                    color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+                  },
+                  input: dropBoxStyle,
+                }}
+              />
+
+              {item?.assetBundle && !assetFile && (
+                <Text
+                  size="sm"
+                  c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[5]}
+                >
+                  Current asset: {item.assetBundle.filename}
+                </Text>
+              )}
+
+              {assetFile && (
+                <Text
+                  size="sm"
+                  c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[5]}
+                >
+                  Selected file: {assetFile.name}
+                </Text>
+              )}
+            </Stack>
+          </SimpleGrid>
+
+
+          {/* Always shown; the content follows the selected type */}
+            <Stack gap="xs" mt="lg">
+              <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+                Upload Instructions
+              </Text>
+              <Card
+                padding="md"
+                radius={12}
+                withBorder
+                style={{
+                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  borderColor: 'rgba(162, 231, 251, 0.12)',
+                }}
+              >
+                <Stack gap="sm">
+                  {(fileInstructions?.paragraphs ?? [fallbackInstruction]).map((paragraph) => (
+                    <Text
+                      key={paragraph}
+                      size="sm"
+                      c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
+                    >
+                      {paragraph}
+                    </Text>
+                  ))}
+                  {fileInstructions?.example && (
+                    <div>
+                      <Text
+                        size="xs"
+                        fw={600}
+                        tt="uppercase"
+                        mb={6}
+                        c={colorScheme === 'dark' ? theme.colors.gray[5] : theme.colors.gray[7]}
+                      >
+                        Example zip file structure
+                      </Text>
+                      <Code block style={{ fontSize: 12 }}>
+                        {fileTree(fileInstructions.example.zipName, fileInstructions.example.paths)}
+                      </Code>
+                    </div>
+                  )}
+                </Stack>
+              </Card>
+            </Stack>
+
+          {/* Add version confirmation modal */}
+          {showVersionConfirm && (
+            <Modal
+              opened={showVersionConfirm}
+              onClose={() => setShowVersionConfirm(false)}
+              title="Create New Version"
+              styles={{
+                title: {
+                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+                },
+                content: {
+                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                },
+              }}
+            >
+              <Stack>
+                <Text c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}>
+                  The changes you're making will create a new version of this item. The current
+                  version will be archived and a new version will be created.
+                </Text>
+
+                <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+                  Current version: {item?.currentVersion?.version || '1'}
+                </Text>
+                <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+                  New version:{' '}
+                  {item?.currentVersion
+                    ? String(parseInt(item.currentVersion.version || '1') + 1)
+                    : '1'}
+                </Text>
+
+                <Group justify="flex-end" mt="md">
+                  <Button variant="outline" onClick={() => setShowVersionConfirm(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    color="blue"
+                    onClick={() => {
+                      setShowVersionConfirm(false);
+                      if (pendingSubmitValues) {
+                        submitForm(pendingSubmitValues);
+                      }
+                    }}
+                  >
+                    Confirm New Version
+                  </Button>
+                </Group>
+              </Stack>
+            </Modal>
+          )}
+
+          <Text size="sm" mt="md" c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[3]}>
+            By uploading files, you confirm that you have the rights to share them and that you
+            have selected the correct license.
+          </Text>
+
+          <Group justify="flex-end">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="outline"
+              loading={loading}
+              disabled={Boolean(uploadBlockedReason) && !isEdit}
+              style={{
+                '--button-bd': '1px solid var(--mantine-color-yellow-1)',
+                '--button-hover': 'var(--mantine-color-yellow-1)',
+                '--button-hover-color': 'var(--mantine-color-black)',
+              }}
+            >
+              {isEdit ? 'Save Changes' : 'Upload Item'}
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Paper>
+  );
+}
