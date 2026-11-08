@@ -46,7 +46,7 @@ const ItemDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { makeRequest } = useAuthenticatedRequest();
-  const { payloadUser, user, showFavoriteCounts, showDownloadCounts } = useAuth();
+  const { payloadUser, user, showFavoriteCounts, showDownloadCounts, allowImport } = useAuth();
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   const [item, setItem] = useState<ItemType | null>(null);
@@ -454,25 +454,27 @@ const ItemDetailPage: React.FC = () => {
                     >
                       Download
                     </Button>
-                    <Button
-                      variant="light"
-                      size="xs"
-                      fullWidth
-                      leftSection={<IconFileImport size={14} />}
-                      disabled={!displayData.assetBundle?.url}
-                      onClick={() =>
-                        importToOpenSpace(
-                          `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle?.url}`,
-                          displayData.type,
-                          displayData.title,
-                          displayData.assetBundle?.filename,
-                          displayData.assetBundle?.entryPath,
-                          item.id
-                        )
-                      }
-                    >
-                      Import
-                    </Button>
+                    {allowImport && (
+                      <Button
+                        variant="light"
+                        size="xs"
+                        fullWidth
+                        leftSection={<IconFileImport size={14} />}
+                        disabled={!displayData.assetBundle?.url}
+                        onClick={() =>
+                          importToOpenSpace(
+                            `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle?.url}`,
+                            displayData.type,
+                            displayData.title,
+                            displayData.assetBundle?.filename,
+                            displayData.assetBundle?.entryPath,
+                            item.id
+                          )
+                        }
+                      >
+                        Import
+                      </Button>
+                    )}
                     <Button
                       variant="light"
                       size="xs"

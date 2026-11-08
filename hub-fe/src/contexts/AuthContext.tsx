@@ -33,6 +33,8 @@ interface SiteConfig {
     showFavoriteCounts?: boolean;
     // Same for the download count on the item detail page
     showDownloadCounts?: boolean;
+    // Unlike the switches above, missing counts as false: the Import buttons only show when this is true
+    allowImport?: boolean;
     versions: string[];
     itemTypes: string[];
     licenses: string[];
@@ -51,6 +53,8 @@ interface AuthContextType {
   showFavoriteCounts: boolean;
   // site-config's `showDownloadCounts` switch for the download count on the item detail page
   showDownloadCounts: boolean;
+  // site-config's `allowImport` switch for the Import-to-OpenSpace buttons (off unless set to true)
+  allowImport: boolean;
   loading: boolean;
   error: string | null;
   logout: () => Promise<void>;
@@ -180,6 +184,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signinEnabled: siteConfig?.config.signin !== false,
     showFavoriteCounts: siteConfig?.config.showFavoriteCounts !== false,
     showDownloadCounts: siteConfig?.config.showDownloadCounts !== false,
+    allowImport: siteConfig?.config.allowImport === true,
     loading,
     error,
     logout,

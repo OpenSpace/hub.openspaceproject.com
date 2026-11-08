@@ -79,7 +79,7 @@ const Item: React.FC<ItemProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const { makeRequest } = useAuthenticatedRequest();
   const navigate = useNavigate();
-  const { payloadUser, showFavoriteCounts } = useAuth();
+  const { payloadUser, showFavoriteCounts, allowImport } = useAuth();
   const isAuthor = payloadUser?.id === author?.id;
   const { importToOpenSpace } = useOpenSpaceImport();
 
@@ -258,6 +258,7 @@ const Item: React.FC<ItemProps> = ({
       <Group mt="auto" pt="xs" px="md" pb="xs" gap="xs">
         {/* Import and Download never wrap apart; if the card is too narrow, Details drops below */}
         <Group gap="xs" wrap="nowrap">
+        {allowImport && (
         <Button
           variant="outline"
           size="xs"
@@ -278,7 +279,8 @@ const Item: React.FC<ItemProps> = ({
         >
           Import
         </Button>
-        
+        )}
+
         <Button
           variant="outline"
           size="xs"

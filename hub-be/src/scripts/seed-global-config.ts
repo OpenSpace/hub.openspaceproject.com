@@ -7,6 +7,7 @@ export const defaultSiteConfig = {
   signin: true,
   showFavoriteCounts: false,
   showDownloadCounts: false,
+  allowImport: false,
   versions: [
     "0.22.1",
     "0.22.0",
