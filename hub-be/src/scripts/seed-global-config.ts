@@ -9,10 +9,9 @@ export const defaultSiteConfig = {
   showDownloadCounts: false,
   allowImport: false,
   versions: [
-    "0.22.1",
-    "0.22.0",
-    "0.21.4",
-    "0.20.1"
+    "0.22",
+    "0.21",
+    "0.20"
   ],
   itemTypes: [
     "asset",
