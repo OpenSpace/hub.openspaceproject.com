@@ -82,8 +82,8 @@ export const Users: CollectionConfig = {
             if (users.docs.length > 0) {
               return {
                 user: {
-                  collection: 'users',
                   ...users.docs[0],
+                  collection: 'users',
                 }
               }
             } else {

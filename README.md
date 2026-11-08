@@ -2,7 +2,7 @@
 
 ## Development Setup
 
-You need Node 20 (or 18.20+), Yarn (`corepack enable`; the frontend brings its own Yarn 4) and
+You need Node 22 (22.23.4+) or 24 (24.22.1+), Yarn (`corepack enable`; the frontend brings its own Yarn 4) and
 MongoDB 8.0 running locally (see [Installing MongoDB](#installing-mongodb)). Three files hold settings and keys that aren't in git; copy them from
 an existing setup, or ask a maintainer:
 
