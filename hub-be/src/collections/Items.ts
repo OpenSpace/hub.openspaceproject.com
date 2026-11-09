@@ -242,8 +242,22 @@ export const Items: CollectionConfig = {
             }
           }
 
-          // Merge with existing tags
-          data.tags = [...new Set([...(data.tags || []), ...tags])]
+          // Keep only custom tags from the existing ones, as automatic ones may be for old values
+          const tagIds: string[] = (data.tags || []).map((tag: string | { id: string }) =>
+            typeof tag === 'string' ? tag : tag.id,
+          )
+          const customTagIds = new Set<string>()
+          if (tagIds.length > 0) {
+            const customTags = await req.payload.find({
+              collection: 'tags',
+              where: { id: { in: tagIds }, type: { equals: 'custom' } },
+              depth: 0,
+              pagination: false,
+              req,
+            })
+            customTags.docs.forEach((tag) => customTagIds.add(tag.id))
+          }
+          data.tags = [...new Set([...tagIds.filter((id) => customTagIds.has(id)), ...tags])]
         }
 
         return data
