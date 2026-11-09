@@ -2,7 +2,13 @@ import { CollectionConfig } from 'payload'
 import path from 'path'
 import { unzipSync } from 'fflate'
 import { withCors } from '@/withCors'
-import { canUploadRequest, isAdmin, UPLOADS_DISABLED_MESSAGE } from '@/Access'
+import {
+  canUploadRequest,
+  fileUsageFields,
+  isAdmin,
+  readUsedOrOwnFiles,
+  UPLOADS_DISABLED_MESSAGE,
+} from '@/Access'
 import { setUserFolder, UPLOADS_DIR, userFolderField } from '@/storage/userFolders'
 //Allow different types and file extensions based on type field:
 // Recording:   *.osrec    (binary)    *.osrectxt    (text)
@@ -132,7 +138,7 @@ export const AssetBundles: CollectionConfig = {
     ],
   },
   access: {
-    read: () => true,
+    read: readUsedOrOwnFiles({ profiles: false }),
     // Turns off the plain POST /api/asset-bundles route, which would skip the file checks:
     // bundles are only added through /validate-and-upload below (it checks login and
     // canUploadRequest itself, then creates through the local API, which skips this)
@@ -191,6 +197,7 @@ export const AssetBundles: CollectionConfig = {
       ],
     },
     userFolderField,
+    ...fileUsageFields('assetBundle', { profiles: false }),
   ],
   hooks: {
     beforeChange: [setUserFolder],

@@ -16,6 +16,7 @@ import { Items } from './collections/Items'
 import { AssetBundles } from './collections/AssetBundles'
 import { SiteConfig } from './globals/site-config'
 import { withCors } from './withCors'
+import { clientIp, rateLimiter, tooManyRequests } from './abuseLimits'
 import { SIGNIN_DISABLED_MESSAGE, signinEnabled } from './Access'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
@@ -75,6 +76,10 @@ export const verifyFirebaseToken = async (idToken: string) => {
 // as a name or username
 const emailLocalPart = (email?: string) => email?.split('@')[0] ?? ''
 
+// The frontend calls /register on every page load; a 429 there signs the user out, so keep
+// this well above what one address (e.g. a whole institution) normally sends
+const registerLimit = rateLimiter(60, 60_000)
+
 // A free username for a new account, from its name or email: "Jane Doe" -> "jane-doe",
 // then "jane-doe-2", ... if that is taken (usernames are unique)
 const uniqueUsername = async (payload: Payload, source: string) => {
@@ -113,6 +118,8 @@ export default buildConfig({
     }
   },
   editor: lexicalEditor(),
+  // The hub only uses REST; GraphQL would be one more way in (e.g. forgotPassword)
+  graphQL: { disable: true },
   secret: payloadSecret,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
@@ -158,6 +165,10 @@ export default buildConfig({
       path: '/register',
       method: 'post',
       handler: withCors(async (req) => {
+        const ip = clientIp(req.headers)
+        if (ip && !registerLimit(ip)) {
+          return tooManyRequests()
+        }
         const data = (await req.json?.()) || {}
         const { idToken, username, link, institution } = data
 

@@ -78,7 +78,17 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    media: {
+      usedByItems: 'items';
+      usedByVersions: 'versions';
+      usedByUsers: 'users';
+    };
+    'asset-bundles': {
+      usedByItems: 'items';
+      usedByVersions: 'versions';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -177,6 +187,21 @@ export interface Media {
    * Storage folder (the uploader’s user ID)
    */
   prefix?: string | null;
+  usedByItems?: {
+    docs?: (string | Item)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  usedByVersions?: {
+    docs?: (string | Version)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  usedByUsers?: {
+    docs?: (string | User)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -272,6 +297,16 @@ export interface AssetBundle {
    * Storage folder (the uploader’s user ID)
    */
   prefix?: string | null;
+  usedByItems?: {
+    docs?: (string | Item)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  usedByVersions?: {
+    docs?: (string | Version)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -460,6 +495,9 @@ export interface UsersSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   prefix?: T;
+  usedByItems?: T;
+  usedByVersions?: T;
+  usedByUsers?: T;
   _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -546,6 +584,8 @@ export interface AssetBundlesSelect<T extends boolean = true> {
   entryPath?: T;
   contents?: T;
   prefix?: T;
+  usedByItems?: T;
+  usedByVersions?: T;
   _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;

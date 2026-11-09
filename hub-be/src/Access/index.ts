@@ -1,4 +1,15 @@
-import { Access, FieldAccess, Payload, PayloadRequest, Where } from 'payload'
+import {
+  Access,
+  CollectionBeforeChangeHook,
+  Field,
+  FieldAccess,
+  Payload,
+  PayloadRequest,
+  ValidationError,
+  ValidationFieldError,
+  Where,
+} from 'payload'
+import { idOf } from '@/accounts/userData'
 import { User } from '../payload-types'
 // import { Access } from "payload/config";
 
@@ -98,23 +109,109 @@ export const canUploadRequest = async (req: PayloadRequest): Promise<boolean> =>
 // Create access for anything that adds uploaded content (items, media, asset bundles)
 export const canUpload: Access = ({ req }) => canUploadRequest(req)
 
-export const readPublishedOrOwn: Access = ({ req: { user } }) => {
-  // Admins can read everything
-  if (user?.role?.includes('admin')) {
-    return true
-  }
+type RequestUser = PayloadRequest['user']
 
-  // Logged-in users can read published items plus their own (any state)
-  if (user) {
-    const where: Where = {
-      or: [{ state: { equals: 'published' } }, { author: { equals: user.id } }],
+// Items a non-admin can read: published ones, plus their own in any state
+const readableItems = (user: RequestUser): Where =>
+  user
+    ? { or: [{ state: { equals: 'published' } }, { author: { equals: user.id } }] }
+    : { state: { equals: 'published' } }
+
+// Versions of the items a non-admin can read
+const readableVersions = (user: RequestUser): Where =>
+  user
+    ? { or: [{ 'item.state': { equals: 'published' } }, { 'item.author': { equals: user.id } }] }
+    : { 'item.state': { equals: 'published' } }
+
+export const readPublishedOrOwn: Access = ({ req: { user } }) =>
+  user?.role?.includes('admin') ? true : readableItems(user)
+
+export const readVersionsOfReadableItems: Access = ({ req: { user } }) =>
+  user?.role?.includes('admin') ? true : readableVersions(user)
+
+// Reverse links from an uploaded file to what uses it, which the read rule below queries.
+// Only admins see them (as "used by" lists in the admin panel)
+export const fileUsageFields = (
+  itemField: 'image' | 'assetBundle',
+  { profiles }: { profiles: boolean },
+): Field[] => [
+  {
+    name: 'usedByItems',
+    type: 'join',
+    collection: 'items',
+    on: itemField,
+    access: { read: isAdminFieldLevel },
+  },
+  {
+    name: 'usedByVersions',
+    type: 'join',
+    collection: 'versions',
+    on: `snapshot.${itemField}`,
+    access: { read: isAdminFieldLevel },
+  },
+  ...(profiles
+    ? [
+        {
+          name: 'usedByUsers',
+          type: 'join',
+          collection: 'users',
+          on: 'thumbnail',
+          access: { read: isAdminFieldLevel },
+        } satisfies Field,
+      ]
+    : []),
+]
+
+// Uploaded files (and their URLs) can be read by their uploader, and by anyone who can read an
+// item or version that uses them, so files of draft or archived items aren't public.
+// Profile pictures are public like the profiles
+export const readUsedOrOwnFiles =
+  ({ profiles }: { profiles: boolean }): Access =>
+  ({ req: { user } }) => {
+    if (user?.role?.includes('admin')) {
+      return true
     }
-    return where
+    const conditions: Where[] = [
+      { usedByItems: { contains: readableItems(user) } },
+      { usedByVersions: { contains: readableVersions(user) } },
+    ]
+    if (profiles) {
+      conditions.push({ usedByUsers: { contains: { thumbnail: { exists: true } } } })
+    }
+    if (user) {
+      conditions.push({ prefix: { equals: user.id } })
+    }
+    return { or: conditions }
   }
 
-  // Anonymous users can only read published items
-  const where: Where = {
-    state: { equals: 'published' },
+// Non-admins may only attach files they uploaded themselves; otherwise anyone could make an
+// unpublished file public by putting it on their own published item or profile
+export const requireOwnUploads =
+  (fields: Record<string, 'media' | 'asset-bundles'>): CollectionBeforeChangeHook =>
+  async ({ collection, data, originalDoc, req }) => {
+    const { user } = req
+    if (!user || user.role?.includes('admin')) {
+      return data
+    }
+    const errors: ValidationFieldError[] = []
+    for (const [field, uploadCollection] of Object.entries(fields)) {
+      const id = idOf(data[field])
+      if (!id || id === idOf(originalDoc?.[field])) {
+        continue
+      }
+      const file = await req.payload.findByID({
+        collection: uploadCollection,
+        id,
+        depth: 0,
+        disableErrors: true,
+        req,
+      })
+      if (file?.prefix !== user.id) {
+        errors.push({ path: field, message: 'You can only use files you uploaded yourself' })
+      }
+    }
+    if (errors.length) {
+      throw new ValidationError({ collection: collection.slug, errors, req })
+    }
+    return data
   }
-  return where
-}

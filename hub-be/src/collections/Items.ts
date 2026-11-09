@@ -1,5 +1,12 @@
+import { clientIp, rateLimiter, tooManyRequests } from '@/abuseLimits'
 import { deleteItemData } from '@/accounts/userData'
-import { canUpload, isAdminFieldLevel, isAdminOrAuthor, readPublishedOrOwn } from '@/Access'
+import {
+  canUpload,
+  isAdminFieldLevel,
+  isAdminOrAuthor,
+  readPublishedOrOwn,
+  requireOwnUploads,
+} from '@/Access'
 import { Item, User } from '@/payload-types'
 import { validateOpenspaceVersion } from '@/validation/openspaceVersion'
 import { withCors } from '@/withCors'
@@ -18,6 +25,9 @@ function getChangedFields(originalDoc: any, newData: any): { field: string }[] {
 const TRACK_WINDOW_MS = 60_000
 const trackedRecently = new Map<string, number>()
 
+// /tag-facets can load every item, so limit how often one address can call it
+const tagFacetsLimit = rateLimiter(60, 60_000)
+
 export const Items: CollectionConfig = {
   slug: 'items',
   access: {
@@ -31,6 +41,7 @@ export const Items: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
+      requireOwnUploads({ image: 'media', assetBundle: 'asset-bundles' }),
       async ({ req, data, originalDoc, operation, context }) => {
         // Keep the denormalized favorites count in sync whenever favoritedBy changes,
         // so "Most Favorited" sorting can use a simple indexed field instead of
@@ -476,6 +487,10 @@ export const Items: CollectionConfig = {
       path: '/tag-facets',
       method: 'get',
       handler: withCors(async (req: PayloadRequest) => {
+        const ip = clientIp(req.headers)
+        if (ip && !tagFacetsLimit(ip)) {
+          return tooManyRequests()
+        }
         try {
           const items = await req.payload.find({
             collection: 'items',
@@ -534,7 +549,7 @@ export const Items: CollectionConfig = {
 
         // Repeat clicks from one address on one item inside the window are ignored (still a 200,
         // so the client can't tell). Kept in memory only and never written anywhere
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        const ip = clientIp(req.headers)
         if (ip) {
           const key = `${ip}|${id}|${kind}`
           const now = Date.now()

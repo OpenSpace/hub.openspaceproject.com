@@ -1,4 +1,4 @@
-import { isAdmin } from '@/Access'
+import { isAdmin, readVersionsOfReadableItems } from '@/Access'
 import { validateOpenspaceVersion } from '@/validation/openspaceVersion'
 import type { CollectionConfig, Field } from 'payload'
 
@@ -56,7 +56,7 @@ const VersionSnapshot: Field[] = [
 export const Versions: CollectionConfig = {
   slug: 'versions',
   access: {
-    read: ({ req }) => true,
+    read: readVersionsOfReadableItems,
     create: isAdmin, // Item hooks make versions through the local API, which skips this
     update: isAdmin, // Versions should be immutable
     delete:  isAdmin, // Versions should be immutable

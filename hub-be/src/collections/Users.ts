@@ -1,4 +1,10 @@
-import { isAdmin, isAdminFieldLevel, isAdminOrSelf, isAdminOrSelfFieldLevel } from '@/Access'
+import {
+  isAdmin,
+  isAdminFieldLevel,
+  isAdminOrSelf,
+  isAdminOrSelfFieldLevel,
+  requireOwnUploads,
+} from '@/Access'
 import { deleteUserContent, exportUserData } from '@/accounts/userData'
 import { verifyFirebaseToken } from '@/payload.config'
 import { withCors } from '@/withCors'
@@ -11,6 +17,8 @@ export const Users: CollectionConfig = {
   },
   // auth: true,
   access: {
+    // Hub users only use the API; the admin panel is for admins
+    admin: ({ req: { user } }) => Boolean(user?.role?.includes('admin')),
     read: () => true,
     // Accounts are made by /api/register (local API, so this doesn't apply) or by admins;
     // Payload's default would let any logged-in user create users through /api/users
@@ -34,6 +42,7 @@ export const Users: CollectionConfig = {
         }
         return data
       },
+      requireOwnUploads({ thumbnail: 'media' }),
     ],
     beforeDelete: [deleteUserContent],
   },

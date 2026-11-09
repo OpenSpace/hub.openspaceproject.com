@@ -1,16 +1,29 @@
 import type { CollectionConfig } from 'payload'
-import { canUpload, isAdmin } from '@/Access'
+import { canUpload, fileUsageFields, isAdmin, readUsedOrOwnFiles } from '@/Access'
 import { MEDIA_DIR, setUserFolder, userFolderField } from '@/storage/userFolders'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   access: {
-    read: () => true,
+    read: readUsedOrOwnFiles({ profiles: true }),
     create: canUpload,
     // Files are only replaced or removed through their item (or by admins); Payload's default
     // would let any logged-in user change or delete anyone's files
     update: isAdmin,
     delete: isAdmin,
+  },
+  // What items and profiles show of their image; also skips the usedBy* lookups there
+  defaultPopulate: {
+    alt: true,
+    url: true,
+    thumbnailURL: true,
+    filename: true,
+    mimeType: true,
+    filesize: true,
+    width: true,
+    height: true,
+    updatedAt: true,
+    createdAt: true,
   },
   fields: [
     {
@@ -19,6 +32,7 @@ export const Media: CollectionConfig = {
       required: true,
     },
     userFolderField,
+    ...fileUsageFields('image', { profiles: true }),
   ],
   hooks: {
     beforeChange: [setUserFolder],
