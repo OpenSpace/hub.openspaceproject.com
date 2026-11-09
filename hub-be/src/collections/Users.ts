@@ -7,6 +7,7 @@ import {
 } from '@/Access'
 import { deleteUserContent, exportUserData } from '@/accounts/userData'
 import { verifyFirebaseToken } from '@/payload.config'
+import { NAME_MAX_LENGTH, validateLink, validateUsername } from '@/validation/textFields'
 import { withCors } from '@/withCors'
 import type { CollectionConfig, PayloadRequest, User } from 'payload'
 
@@ -147,12 +148,14 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
+      maxLength: NAME_MAX_LENGTH,
     },
     {
       name: 'username',
       type: 'text',
       required: true,
       unique: true,
+      validate: validateUsername,
     },
     {
       name: 'thumbnail',
@@ -162,6 +165,7 @@ export const Users: CollectionConfig = {
     {
       name: 'link',
       type: 'text',
+      validate: validateLink,
     },
     {
       // How other people can reach this user. Separate from `email`, which comes from the login

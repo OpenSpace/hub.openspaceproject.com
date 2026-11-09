@@ -18,6 +18,12 @@ import { notifications } from '@mantine/notifications';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
 import { User } from '../types/users';
+import {
+  LINK_MAX_LENGTH,
+  linkError,
+  USERNAME_MAX_LENGTH,
+  usernameError,
+} from '../utils/fieldLimits';
 
 interface UserProfileFormProps {
   user: User;
@@ -44,9 +50,15 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       contactEmail: user?.contactEmail || '',
     },
     validate: {
-      username: (value) => (value.trim().length > 0 ? null : 'Username is required'),
+      username: (value) => usernameError(value.trim()),
       institution: (value) => (value.trim().length > 0 ? null : 'Institution is required'),
+      link: (value) => linkError(value.trim()),
     },
+    transformValues: (values) => ({
+      ...values,
+      username: values.username.trim(),
+      link: values.link.trim(),
+    }),
   });
 
   // Handle image change and upload to media endpoint
@@ -282,6 +294,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             label="Username"
             placeholder="Enter your username"
             required
+            maxLength={USERNAME_MAX_LENGTH}
             styles={{
               label: {
                 color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
@@ -315,7 +328,8 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
 
           <TextInput
             label="Link"
-            placeholder="Enter your website or profile link (optional)"
+            placeholder="https://example.com (optional)"
+            maxLength={LINK_MAX_LENGTH}
             styles={{
               label: {
                 color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],

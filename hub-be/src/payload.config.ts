@@ -21,6 +21,7 @@ import { SIGNIN_DISABLED_MESSAGE, signinEnabled } from './Access'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import { userFolderAdapter } from './storage/userFolders'
+import { NAME_MAX_LENGTH, USERNAME_MAX_LENGTH } from './validation/textFields'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -87,6 +88,8 @@ const uniqueUsername = async (payload: Payload, source: string) => {
     source
       .toLowerCase()
       .replace(/[^a-z0-9._-]+/g, '-')
+      // Leave room for a "-<n>" suffix
+      .slice(0, USERNAME_MAX_LENGTH - 7)
       .replace(/^[-.]+|[-.]+$/g, '') || 'user'
   for (let n = 1; ; n++) {
     const candidate = n === 1 ? base : `${base}-${n}`
@@ -233,7 +236,11 @@ export default buildConfig({
           }
           // Create new user with Firebase data. Email/password logins have no name, so fall
           // back to the email's local part; users can change both on their profile
-          const name = decodedToken.name || emailLocalPart(decodedToken.email) || 'OpenSpace user'
+          const name = (
+            decodedToken.name ||
+            emailLocalPart(decodedToken.email) ||
+            'OpenSpace user'
+          ).slice(0, NAME_MAX_LENGTH)
           const newUser = await req.payload.create({
             collection: 'users',
             data: {

@@ -9,6 +9,7 @@ import {
 } from '@/Access'
 import { Item, User } from '@/payload-types'
 import { validateOpenspaceVersion } from '@/validation/openspaceVersion'
+import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/validation/textFields'
 import { withCors } from '@/withCors'
 import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 
@@ -391,6 +392,7 @@ export const Items: CollectionConfig = {
       name: 'title',
       type: 'text',
       required: true,
+      maxLength: TITLE_MAX_LENGTH,
     },
     {
       name: 'titleLower',
@@ -409,6 +411,7 @@ export const Items: CollectionConfig = {
       name: 'description',
       type: 'text',
       required: true,
+      maxLength: DESCRIPTION_MAX_LENGTH,
     },
     {
       name: 'type',

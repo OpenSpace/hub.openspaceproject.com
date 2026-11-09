@@ -31,6 +31,7 @@ import {
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
 import { Item } from '../types/items';
 import { link } from 'fs/promises';
+import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/utils/fieldLimits';
 import { ITEM_TYPE_LABELS } from '@/utils/tagUtils';
 import { fileTree, UPLOAD_INSTRUCTIONS } from '@/utils/uploadInstructions';
 
@@ -699,6 +700,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
             label="Title"
             placeholder="Enter item title"
             required
+            maxLength={TITLE_MAX_LENGTH}
             styles={{
               label: {
                 color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
@@ -712,6 +714,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
             placeholder="Enter item description"
             minRows={4}
             required
+            maxLength={DESCRIPTION_MAX_LENGTH}
             styles={{
               label: {
                 color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
