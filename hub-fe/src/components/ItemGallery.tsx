@@ -15,7 +15,7 @@ import {
   useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
-import { TagFacet } from '@/hooks/useItems';
+import { SORT_OPTIONS, TagFacet } from '@/hooks/useItems';
 import { TagRef } from '@/types/items';
 import { ItemCard } from '@/utils/itemCardQuery';
 import { getTagDisplayName, getTagLabel, getTagStyle } from '@/utils/tagUtils';
@@ -34,6 +34,7 @@ interface ItemGalleryProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  searchQuery: string;
   onSearch: (query: string) => void;
   onSort: (sort: string) => void;
   sortBy: string;
@@ -50,6 +51,7 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  searchQuery,
   onSearch,
   onSort,
   sortBy,
@@ -83,6 +85,7 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
         <Group wrap="nowrap">
           <TextInput
             placeholder="Search items..."
+            value={searchQuery}
             onChange={(e) => onSearch(e.target.value)}
             leftSection={<IconSearch size={16} />}
             w={300}
@@ -90,12 +93,7 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
           <Select
             value={sortBy}
             onChange={(value) => onSort(value || 'newest')}
-            data={[
-              { value: 'newest', label: 'Newest First' },
-              { value: 'oldest', label: 'Oldest First' },
-              { value: 'title', label: 'Title A-Z' },
-              { value: 'mostFavorited', label: 'Most Favorited' },
-            ]}
+            data={SORT_OPTIONS}
             w={150}
           />
           <Button

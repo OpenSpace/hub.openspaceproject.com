@@ -29,6 +29,7 @@ export function HomePage() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
+        searchQuery={searchQuery}
         onSearch={handleSearch}
         onSort={handleSort}
         sortBy={sortBy}

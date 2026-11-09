@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash.debounce';
 import { stringify } from 'qs-esm';
+import { useSearchParams } from 'react-router-dom';
 import { TagRef } from '@/types/items';
 import { apiFetch } from '@/utils/api';
 import { ItemCard, itemCardQuery } from '@/utils/itemCardQuery';
@@ -24,8 +25,17 @@ export interface TagFacet extends TagRef {
   count: number;
 }
 
+export const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'title', label: 'Title A-Z' },
+  { value: 'mostFavorited', label: 'Most Favorited' },
+];
+
+// Tags are Mongo documents, so their ids are ObjectIds
+const TAG_ID = /^[0-9a-f]{24}$/i;
+
 interface UseItemsOptions {
-  initialPage?: number;
   limit?: number;
   additionalWhere?: Record<string, any>;
   initialSort?: string;
@@ -52,7 +62,6 @@ interface UseItemsReturn {
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export function useItems({
-  initialPage = 1,
   limit = 12,
   additionalWhere = {},
   initialSort = 'newest',
@@ -60,12 +69,49 @@ export function useItems({
   const [items, setItems] = useState<ItemCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState(initialSort);
-  const [selectedTags, setSelectedTags] = useState<TagRef[]>([]);
   const [tagFacets, setTagFacets] = useState<TagFacet[]>([]);
+
+  // The filters live in the URL (?q=&sort=&tag=&tag=&page=), so reloading, the back button
+  // and shared links keep them. Defaults are left out of the URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') ?? '';
+  const sortParam = searchParams.get('sort');
+  const sortBy =
+    sortParam && SORT_OPTIONS.some((option) => option.value === sortParam)
+      ? sortParam
+      : initialSort;
+  const currentPage = Math.max(1, Number.parseInt(searchParams.get('page') ?? '', 10) || 1);
+  const tagsKey = searchParams.getAll('tag').join(',');
+  const tagIds = useMemo(
+    () => [...new Set(tagsKey.split(',').filter((id) => TAG_ID.test(id)))],
+    [tagsKey]
+  );
+
+  // The URL only has tag ids; this holds the names and types of the ones seen so far
+  const [knownTags, setKnownTags] = useState(() => new Map<string, TagRef>());
+  const selectedTags = useMemo(
+    () => tagIds.flatMap((id) => knownTags.get(id) ?? []),
+    [tagIds, knownTags]
+  );
+
+  const updateParams = (
+    changes: Record<string, string | string[] | null>,
+    options: { replace?: boolean; flushSync?: boolean } = {}
+  ) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(changes)) {
+        next.delete(key);
+        for (const item of [value ?? []].flat()) {
+          if (item) {
+            next.append(key, item);
+          }
+        }
+      }
+      return next;
+    }, options);
+  };
 
   // Callers often pass a new additionalWhere object each render; key on its contents so
   // that doesn't refetch every render
@@ -78,7 +124,7 @@ export function useItems({
   // Every filter as one AND list, so they can't overwrite each other. Each selected tag is
   // its own condition: items must have all of them, so each tag clicked narrows the results
   const buildWhere = useCallback(
-    (search: string, tags: TagRef[]) => {
+    (search: string, tags: string[]) => {
       const conditions: Record<string, any>[] = [];
       if (search) {
         conditions.push({
@@ -86,7 +132,7 @@ export function useItems({
         });
       }
       for (const tag of tags) {
-        conditions.push({ tags: { equals: tag.id } });
+        conditions.push({ tags: { equals: tag } });
       }
       const extra = JSON.parse(additionalWhereKey);
       if (Object.keys(extra).length > 0) {
@@ -98,7 +144,7 @@ export function useItems({
   );
 
   const fetchTagFacets = useCallback(
-    async (search: string, tags: TagRef[]) => {
+    async (search: string, tags: string[]) => {
       const where = buildWhere(search, tags);
       const cacheKey = JSON.stringify(where);
       const cached = facetCache.get(cacheKey);
@@ -122,7 +168,7 @@ export function useItems({
   );
 
   const fetchItems = useCallback(
-    async (page: number, search: string = '', sort: string = initialSort, tags: TagRef[] = []) => {
+    async (page: number, search: string, sort: string, tags: string[]) => {
       try {
         setLoading(true);
 
@@ -148,7 +194,7 @@ export function useItems({
         };
 
         // Create cache key
-        const cacheKey = JSON.stringify({ query, tags: tags.map((t) => t.id) });
+        const cacheKey = JSON.stringify(query);
 
         // Check cache first
         const cachedData = searchCache.get(cacheKey);
@@ -182,13 +228,13 @@ export function useItems({
         setLoading(false);
       }
     },
-    [buildWhere, initialSort, limit, searchCache]
+    [buildWhere, limit, searchCache]
   );
 
   // Debounced search handler
   const debouncedFetch = useMemo(
     () =>
-      debounce((page: number, search: string, sort: string, tags: TagRef[]) => {
+      debounce((page: number, search: string, sort: string, tags: string[]) => {
         fetchItems(page, search, sort, tags);
       }, 100), // 300ms delay
     [fetchItems]
@@ -198,47 +244,97 @@ export function useItems({
   useEffect(() => {
     // Only search if query is empty or has at least 2 characters
     if (searchQuery.length === 0 || searchQuery.length >= 2) {
-      debouncedFetch(currentPage, searchQuery, sortBy, selectedTags);
+      debouncedFetch(currentPage, searchQuery, sortBy, tagIds);
     }
 
     // Cleanup
     return () => {
       debouncedFetch.cancel();
     };
-  }, [currentPage, searchQuery, sortBy, selectedTags, debouncedFetch]);
+  }, [currentPage, searchQuery, sortBy, tagIds, debouncedFetch]);
 
   // Tag options only depend on the filters, not the page or sort order
   useEffect(() => {
     if (searchQuery.length === 0 || searchQuery.length >= 2) {
-      const timeout = setTimeout(() => fetchTagFacets(searchQuery, selectedTags), 100);
+      const timeout = setTimeout(() => fetchTagFacets(searchQuery, tagIds), 100);
       return () => clearTimeout(timeout);
     }
-  }, [searchQuery, selectedTags, fetchTagFacets]);
+  }, [searchQuery, tagIds, fetchTagFacets]);
+
+  // Look up tags from the URL that haven't been seen yet, and drop ids that aren't tags
+  useEffect(() => {
+    const missing = tagIds.filter((id) => !knownTags.has(id));
+    if (missing.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    const query = stringify(
+      {
+        where: { id: { in: missing } },
+        select: { name: true, type: true },
+        depth: 0,
+        pagination: false,
+      },
+      { addQueryPrefix: true }
+    );
+    apiFetch<{ docs: TagRef[] }>(`/api/tags${query}`)
+      .then(({ docs }) => {
+        if (cancelled) {
+          return;
+        }
+        setKnownTags((prev) => {
+          const next = new Map(prev);
+          for (const { id, name, type } of docs) {
+            next.set(id, { id, name, type });
+          }
+          return next;
+        });
+        const unknown = missing.filter((id) => !docs.some((tag) => tag.id === id));
+        if (unknown.length > 0) {
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete('tag');
+              for (const id of prev.getAll('tag')) {
+                if (!unknown.includes(id)) {
+                  next.append('tag', id);
+                }
+              }
+              return next;
+            },
+            { replace: true }
+          );
+        }
+      })
+      .catch((err) => console.error('Error looking up tags:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [tagIds, knownTags, setSearchParams]);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    updateParams({ page: page > 1 ? String(page) : null });
   };
 
+  // Typing replaces the history entry, so Back skips the search's intermediate states.
+  // flushSync keeps the controlled search box from losing keystrokes to a transition
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setCurrentPage(1); // Reset to first page when searching
+    updateParams({ q: query, page: null }, { replace: searchQuery !== '', flushSync: true });
   };
 
   const handleSort = (sort: string) => {
-    setSortBy(sort);
-    setCurrentPage(1); // Reset to first page when sorting changes
+    updateParams({ sort: sort === initialSort ? null : sort, page: null });
   };
 
   const handleTagSelect = (tag: TagRef) => {
-    if (!selectedTags.some((t) => t.id === tag.id)) {
-      setSelectedTags((prev) => [...prev, tag]);
-      setCurrentPage(1); // Reset to first page when adding a tag
+    setKnownTags((prev) => new Map(prev).set(tag.id, tag));
+    if (!tagIds.includes(tag.id)) {
+      updateParams({ tag: [...tagIds, tag.id], page: null });
     }
   };
 
   const handleTagRemove = (tagId: string) => {
-    setSelectedTags((prev) => prev.filter((tag) => tag.id !== tagId));
-    setCurrentPage(1); // Reset to first page when removing a tag
+    updateParams({ tag: tagIds.filter((id) => id !== tagId), page: null });
   };
 
   return {

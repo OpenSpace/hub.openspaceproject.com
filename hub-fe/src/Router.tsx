@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import Footer from './components/Footer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { TopMenuBar } from './components/TopMenuBar';
@@ -10,168 +10,55 @@ import { NewItemPage } from './pages/NewItemPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { ItemType } from './utils/tagUtils';
+
+// The gallery page of each item type
+const itemTypePaths = {
+  asset: '/assets',
+  profile: '/profiles',
+  recording: '/recordings',
+  webpanel: '/webpanels',
+  config: '/configs',
+  showcomposer: '/showcomposers',
+  package: '/packages',
+} satisfies Record<ItemType, string>;
+
+function Layout() {
+  return (
+    <>
+      <TopMenuBar />
+      <Outlet />
+      <Footer />
+    </>
+  );
+}
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    element: (
-      <>
-        <TopMenuBar />
-        <HomePage />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/items',
-    // element: <ItemsPage />,
+    element: <Layout />,
     children: [
+      { path: '/', element: <HomePage /> },
+      { path: '/items', element: <ItemsPage type={null} /> },
+      { path: '/items/new', element: <NewItemPage /> },
+      { path: '/items/:id', element: <ItemDetailPage /> },
       {
-        index: true,
+        path: '/items/:id/edit',
         element: (
-          <>
-            <TopMenuBar />
-            <ItemsPage type={null} />
-            <Footer />
-          </>
+          <ProtectedRoute>
+            <EditItemPage />
+          </ProtectedRoute>
         ),
       },
-      {
-        path: ':id',
-        element: (
-          <>
-            <TopMenuBar />
-            <ItemDetailPage /> <Footer />
-          </>
-        ),
-      },
+      ...Object.entries(itemTypePaths).map(([type, path]) => ({
+        path,
+        // Keyed so going from one type's gallery to another's starts a new one
+        element: <ItemsPage key={type} type={type as ItemType} />,
+      })),
+      { path: '/profile', element: <Navigate to="/profile/me" replace /> },
+      { path: '/profile/:userId', element: <ProfilePage /> },
+      { path: '/privacy', element: <PrivacyPage /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
-  },
-  {
-    path: '/assets',
-    element: (
-      <>
-        <TopMenuBar />
-        <ItemsPage type={'asset'} />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/profiles',
-    element: (
-      <>
-        <TopMenuBar />
-        <ItemsPage type={'profile'} />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/recordings',
-    element: (
-      <>
-        <TopMenuBar />
-        <ItemsPage type={'recording'} />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/webpanels',
-    element: (
-      <>
-        <TopMenuBar />
-        <ItemsPage type={'webpanel'} />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/configs',
-    element: (
-      <>
-        <TopMenuBar />
-        <ItemsPage type={'config'} />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/showcomposers',
-    element: (
-      <>
-        <TopMenuBar />
-        <ItemsPage type={'showcomposer'} />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/packages',
-    element: (
-      <>
-        <TopMenuBar />
-        <ItemsPage type={'package'} />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/profile/:userId',
-    element: (
-      <>
-        <TopMenuBar />
-        <ProfilePage />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/profile',
-    element: <Navigate to="/profile/me" replace />,
-  },
-  {
-    path: '/items/new',
-    element: (
-      <>
-        <TopMenuBar />
-        <NewItemPage />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/items/:id/edit',
-    element: (
-      <>
-        <TopMenuBar />
-        <ProtectedRoute>
-          <EditItemPage />
-        </ProtectedRoute>
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '/privacy',
-    element: (
-      <>
-        <TopMenuBar />
-        <PrivacyPage />
-        <Footer />
-      </>
-    ),
-  },
-  {
-    path: '*',
-    element: (
-      <>
-        <TopMenuBar />
-        <NotFoundPage />
-        <Footer />
-      </>
-    ),
   },
 ]);
 
