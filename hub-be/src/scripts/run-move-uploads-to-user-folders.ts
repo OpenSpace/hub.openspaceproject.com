@@ -11,8 +11,9 @@ const run = async () => {
     await moveUploadsToUserFolders(payload, process.argv.includes('--apply'))
   } catch (error) {
     console.error('Error moving uploads to user folders:', error)
+    process.exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit()
   }
 }
 

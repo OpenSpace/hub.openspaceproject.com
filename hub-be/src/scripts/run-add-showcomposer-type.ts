@@ -11,8 +11,9 @@ const run = async () => {
     await addShowcomposerType(payload)
   } catch (error) {
     console.error('Error adding showcomposer item type:', error)
+    process.exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit()
   }
 }
 

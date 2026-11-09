@@ -11,8 +11,9 @@ const run = async () => {
     await backfillAssetContents(payload)
   } catch (error) {
     console.error('Error backfilling asset contents:', error)
+    process.exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit()
   }
 }
 

@@ -11,8 +11,9 @@ const run = async () => {
     await backfillFavoritesCount(payload)
   } catch (error) {
     console.error('Error backfilling favoritesCount:', error)
+    process.exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit()
   }
 }
 

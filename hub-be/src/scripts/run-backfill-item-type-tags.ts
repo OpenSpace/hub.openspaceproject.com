@@ -11,8 +11,9 @@ const run = async () => {
     await backfillItemTypeTags(payload)
   } catch (error) {
     console.error('Error backfilling item type tags:', error)
+    process.exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit()
   }
 }
 

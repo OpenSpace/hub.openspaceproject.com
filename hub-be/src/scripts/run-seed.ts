@@ -36,8 +36,9 @@ const runSeeds = async () => {
     list('Warnings', report.warnings)
   } catch (error) {
     console.error('Error running seeds:', error)
+    process.exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit()
   }
 }
 

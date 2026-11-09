@@ -11,8 +11,9 @@ const run = async () => {
     await backfillOpenspaceVersionTags(payload)
   } catch (error) {
     console.error('Error backfilling OpenSpace version tags:', error)
+    process.exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit()
   }
 }
 

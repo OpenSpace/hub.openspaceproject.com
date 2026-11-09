@@ -19,6 +19,8 @@ const run = async () => {
     const result = await payload.find({
       collection: 'users',
       where: { email: { equals: email } },
+      depth: 0,
+      limit: 1,
     })
 
     if (!result.docs.length) {
@@ -26,16 +28,10 @@ const run = async () => {
       process.exit(1)
     }
 
-    const user = result.docs[0]
-
-    await payload.update({
+    await payload.unlock({
       collection: 'users',
-      id: user.id,
-      data: {
-        // @ts-ignore
-        locked: false,
-        loginAttempts: 0,
-      },
+      data: { email },
+      overrideAccess: true,
     })
 
     console.log(`✅ Admin user "${email}" unlocked successfully`)
