@@ -7,7 +7,9 @@ import {
   readPublishedOrOwn,
   requireOwnUploads,
 } from '@/Access'
+import { ITEM_TYPES } from '@/itemTypes'
 import { normalizeOpenspaceVersion, validateOpenspaceVersion } from '@/validation/openspaceVersion'
+import { validateItemType, validateLicense } from '@/validation/siteConfigLists'
 import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/validation/textFields'
 import { withCors } from '@/withCors'
 import type { CollectionConfig, PayloadRequest, Where } from 'payload'
@@ -85,6 +87,7 @@ export const Items: CollectionConfig = {
             const versionDoc = await req.payload.findByID({
               collection: 'versions',
               id: originalDoc.currentVersion,
+              depth: 0,
               req,
             })
             if (versionDoc) {
@@ -113,6 +116,7 @@ export const Items: CollectionConfig = {
                 },
                 changedFields: [],
               },
+              depth: 0,
               req,
             })
 
@@ -148,6 +152,7 @@ export const Items: CollectionConfig = {
                 },
                 changedFields: getChangedFields(originalDoc, data),
               },
+              depth: 0,
               req,
             })
 
@@ -176,6 +181,7 @@ export const Items: CollectionConfig = {
                   assetBundle: data.assetBundle,
                 },
               },
+              depth: 0,
               req,
             })
           }
@@ -193,6 +199,9 @@ export const Items: CollectionConfig = {
                 type: { equals: 'openspaceVersion' },
                 name: { equals: data.openspaceVersion },
               },
+              depth: 0,
+              limit: 1,
+              pagination: false,
               req,
             })
             if (versionTag.docs.length > 0) {
@@ -218,6 +227,9 @@ export const Items: CollectionConfig = {
                 type: { equals: 'license' },
                 name: { equals: data.license },
               },
+              depth: 0,
+              limit: 1,
+              pagination: false,
               req,
             })
             if (licenseTag.docs.length > 0) {
@@ -233,6 +245,9 @@ export const Items: CollectionConfig = {
                 type: { equals: 'itemType' },
                 name: { equals: data.type },
               },
+              depth: 0,
+              limit: 1,
+              pagination: false,
               req,
             })
             if (typeTag.docs.length > 0) {
@@ -293,6 +308,7 @@ export const Items: CollectionConfig = {
               },
               changedFields: [],
             },
+            depth: 0,
             req,
           })
 
@@ -306,6 +322,7 @@ export const Items: CollectionConfig = {
             // Prevent this internal linking update from re-triggering the
             // versioning/tagging logic in beforeChange above.
             context: { skipItemHooks: true },
+            depth: 0,
             req,
           })
         }
@@ -427,27 +444,14 @@ export const Items: CollectionConfig = {
     {
       name: 'type',
       type: 'select',
-      options: ['asset', 'profile', 'recording', 'webpanel', 'config', 'showcomposer', 'package'],
+      options: [...ITEM_TYPES],
       required: true,
+      validate: validateItemType,
     },
     {
       name: 'license',
-      type: 'select',
-      options: [
-        'CC BY',
-        'CC BY-SA',
-        'CC BY-NC',
-        'CC BY-NC-SA',
-        'CC BY-ND',
-        'CC BY-NC-ND',
-        'CC0',
-        'MIT',
-        'Apache',
-        'GPL',
-        'LGPL',
-        'BSD',
-        'Proprietary',
-      ],
+      type: 'text',
+      validate: validateLicense,
     },
     {
       name: 'openspaceVersion',
@@ -641,6 +645,7 @@ export const Items: CollectionConfig = {
           id,
           depth: 1,
           select: { favoritedBy: true },
+          populate: { users: { username: true } },
           req,
         })
         return Response.json({ favoritedBy, message })

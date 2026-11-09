@@ -256,23 +256,7 @@ export interface Item {
   titleLower?: string | null;
   description: string;
   type: 'asset' | 'profile' | 'recording' | 'webpanel' | 'config' | 'showcomposer' | 'package';
-  license?:
-    | (
-        | 'CC BY'
-        | 'CC BY-SA'
-        | 'CC BY-NC'
-        | 'CC BY-NC-SA'
-        | 'CC BY-ND'
-        | 'CC BY-NC-ND'
-        | 'CC0'
-        | 'MIT'
-        | 'Apache'
-        | 'GPL'
-        | 'LGPL'
-        | 'BSD'
-        | 'Proprietary'
-      )
-    | null;
+  license?: string | null;
   openspaceVersion: string;
   image?: (string | null) | Media;
   assetBundle?: (string | null) | AssetBundle;
@@ -346,23 +330,7 @@ export interface Version {
     title?: string | null;
     description?: string | null;
     type?: ('asset' | 'profile' | 'recording' | 'webpanel' | 'config' | 'showcomposer' | 'package') | null;
-    license?:
-      | (
-          | 'CC BY'
-          | 'CC BY-SA'
-          | 'CC BY-NC'
-          | 'CC BY-NC-SA'
-          | 'CC BY-ND'
-          | 'CC BY-NC-ND'
-          | 'CC0'
-          | 'MIT'
-          | 'Apache'
-          | 'GPL'
-          | 'LGPL'
-          | 'BSD'
-          | 'Proprietary'
-        )
-      | null;
+    license?: string | null;
     openspaceVersion?: string | null;
     image?: (string | null) | Media;
     assetBundle?: (string | null) | AssetBundle;
@@ -657,15 +625,38 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface SiteConfig {
   id: string;
-  config:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
+  /**
+   * Let users upload new items and files. Admins always can.
+   */
+  upload?: boolean | null;
+  /**
+   * Let people log in and sign up. Signed-in users stay signed in.
+   */
+  signin?: boolean | null;
+  /**
+   * Show the number of favorites next to the hearts.
+   */
+  showFavoriteCounts?: boolean | null;
+  /**
+   * Show the download count on item pages.
+   */
+  showDownloadCounts?: boolean | null;
+  /**
+   * Show the Import to OpenSpace buttons.
+   */
+  allowImport?: boolean | null;
+  /**
+   * Minor versions only (e.g. 0.21), in the order the upload form lists them.
+   */
+  versions: string[];
+  /**
+   * The types that can be uploaded.
+   */
+  itemTypes: ('asset' | 'profile' | 'recording' | 'webpanel' | 'config' | 'showcomposer' | 'package')[];
+  /**
+   * In the order the upload form lists them.
+   */
+  licenses: string[];
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -674,7 +665,14 @@ export interface SiteConfig {
  * via the `definition` "site-config_select".
  */
 export interface SiteConfigSelect<T extends boolean = true> {
-  config?: T;
+  upload?: T;
+  signin?: T;
+  showFavoriteCounts?: T;
+  showDownloadCounts?: T;
+  allowImport?: T;
+  versions?: T;
+  itemTypes?: T;
+  licenses?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

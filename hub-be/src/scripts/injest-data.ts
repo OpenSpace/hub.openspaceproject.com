@@ -2,8 +2,12 @@ import { Payload } from 'payload'
 import { randomBytes } from 'crypto'
 import fs from 'fs'
 import path from 'path'
-import { unzipSync } from 'fflate'
-import { bundleMimeTypes, findAssetEntryPath, listZipContents } from '@/collections/AssetBundles'
+import {
+  bundleMimeTypes,
+  findAssetEntryPath,
+  listZipContents,
+  readZipEntries,
+} from '@/collections/AssetBundles'
 import type { Item, Tag } from '@/payload-types'
 import { toMinorVersion } from '@/validation/openspaceVersion'
 import { defaultSiteConfig } from './seed-global-config'
@@ -173,13 +177,13 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
     let entryPath
     if (extension === '.zip') {
       try {
-        const zipData = unzipSync(new Uint8Array(buffer))
-        contents = listZipContents(zipData)
+        const zipEntries = readZipEntries(new Uint8Array(buffer))
+        contents = listZipContents(zipEntries)
         if (type === 'asset') {
           const baseName = path.basename(fileName, '.zip')
           entryPath =
-            findAssetEntryPath(zipData, baseName) ||
-            findAssetEntryPath(zipData, baseName.replace(/-\d+$/, ''))
+            findAssetEntryPath(zipEntries, baseName) ||
+            findAssetEntryPath(zipEntries, baseName.replace(/-\d+$/, ''))
           if (!entryPath) {
             report.warnings.push(`${relativePath}: no ${baseName}.asset inside; import will guess`)
           }

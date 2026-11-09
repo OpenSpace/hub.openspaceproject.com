@@ -40,32 +40,9 @@ interface ItemFormProps {
   isEdit?: boolean;
 }
 
-// Fallback options in case the CMS config isn't available
-const FALLBACK_TYPE_OPTIONS = Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => ({
-  value,
-  label,
-}));
-
-const FALLBACK_LICENSE_OPTIONS = [
-  { value: 'CC BY', label: 'CC BY' },
-  { value: 'CC BY-SA', label: 'CC BY-SA' },
-  { value: 'CC BY-NC', label: 'CC BY-NC' },
-  { value: 'CC BY-NC-SA', label: 'CC BY-NC-SA' },
-  { value: 'CC BY-ND', label: 'CC BY-ND' },
-  { value: 'CC BY-NC-ND', label: 'CC BY-NC-ND' },
-  { value: 'CC0', label: 'CC0' },
-  { value: 'MIT', label: 'MIT' },
-  { value: 'Apache', label: 'Apache' },
-  { value: 'GPL', label: 'GPL' },
-  { value: 'LGPL', label: 'LGPL' },
-  { value: 'BSD', label: 'BSD' },
-  { value: 'Proprietary', label: 'Proprietary' },
-];
-
-const FALLBACK_OPENSPACE_VERSIONS = ['0.22', '0.21', '0.20'].map((version) => ({
-  value: version,
-  label: version,
-}));
+// The API accepts the value an item already has even if it was since taken off the site config
+const withCurrent = (options: string[] = [], current?: string) =>
+  current && !options.includes(current) ? [...options, current] : options;
 
 // Icon and text as one centered unit, for the file pickers' placeholder and chosen file name
 const UploadLabel = ({ children }: { children: React.ReactNode }) => (
@@ -118,18 +95,12 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
   const [filePlaceholder, setFilePlaceholder] = useState<string>('Upload a file');
   const [uploadType, setUploadType] = useState<string>(item?.type || 'asset');
 
-  // Prepare dropdown options from site config or use fallbacks
-  const typeOptions =
-    siteConfig?.config.itemTypes.map((type) => ({
-      value: type,
-      label: ITEM_TYPE_LABELS[type] || type,
-    })) || FALLBACK_TYPE_OPTIONS;
-  const licenseOptions =
-    siteConfig?.config.licenses.map((license) => ({ value: license, label: license })) ||
-    FALLBACK_LICENSE_OPTIONS;
-  const versionOptions =
-    siteConfig?.config.versions.map((version) => ({ value: version, label: version })) ||
-    FALLBACK_OPENSPACE_VERSIONS;
+  const typeOptions = withCurrent(siteConfig?.itemTypes, item?.type).map((type) => ({
+    value: type,
+    label: ITEM_TYPE_LABELS[type] || type,
+  }));
+  const licenseOptions = withCurrent(siteConfig?.licenses, item?.license);
+  const versionOptions = withCurrent(siteConfig?.versions, item?.openspaceVersion);
 
   const form = useForm({
     initialValues: {

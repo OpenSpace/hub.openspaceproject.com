@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash.debounce';
 import { stringify } from 'qs-esm';
 import { Item, Tag } from '@/types/items';
+import { itemCardQuery } from '@/utils/itemCardQuery';
 
 interface PaginatedResponse {
   docs: Item[];
@@ -142,11 +143,11 @@ export function useItems({
 
         // Build the query object
         const query = {
+          ...itemCardQuery,
           where,
           sort: sortClause,
           limit,
           page,
-          depth: 2,
         };
 
         // Create cache key

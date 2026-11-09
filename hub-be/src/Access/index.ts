@@ -85,7 +85,7 @@ export const UPLOADS_DISABLED_MESSAGE = 'Uploading is currently disabled'
 // A boolean switch in the site-config global; on unless it is explicitly false
 const siteConfigSwitch = async (payload: Payload, key: 'upload' | 'signin'): Promise<boolean> => {
   const siteConfig = await payload.findGlobal({ slug: 'site-config', depth: 0 })
-  return (siteConfig.config as Record<string, unknown> | null)?.[key] !== false
+  return siteConfig[key] !== false
 }
 
 export const uploadsEnabled = (payload: Payload) => siteConfigSwitch(payload, 'upload')

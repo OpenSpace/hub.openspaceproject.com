@@ -51,6 +51,16 @@ export const sortTags = <T extends { type: Tag['type'] }>(tags: T[]): T[] => {
   return [...tags].sort((a, b) => rank(a) - rank(b));
 };
 
+// The item types in hub-be/src/itemTypes.ts
+export type ItemType =
+  | 'asset'
+  | 'profile'
+  | 'recording'
+  | 'webpanel'
+  | 'config'
+  | 'showcomposer'
+  | 'package';
+
 // Pretty labels for item types - the CMS site-config only stores the raw
 // type value, so this is the one place that maps it to display text.
 export const ITEM_TYPE_LABELS: Record<string, string> = {
@@ -61,7 +71,7 @@ export const ITEM_TYPE_LABELS: Record<string, string> = {
   config: 'Config',
   package: 'Package',
   showcomposer: 'ShowComposer Panel',
-};
+} satisfies Record<ItemType, string>;
 
 // The text shown on a tag: item types get their pretty label, the rest show their name as is
 export const getTagDisplayName = (tag: { name: string; type: Tag['type'] }) =>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconEdit } from '@tabler/icons-react';
+import { stringify } from 'qs-esm';
 import { useLocation, useParams } from 'react-router-dom';
 import {
   Avatar,
@@ -24,6 +25,63 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
 import { Item as ItemType } from '../types/items';
 import { User } from '../types/users';
+import { itemCardQuery } from '../utils/itemCardQuery';
+
+const ITEMS_PER_PAGE = 12;
+
+interface ItemCardsPage {
+  docs: ItemType[];
+  totalDocs: number;
+  totalPages: number;
+}
+
+// One page of item cards matching `where` (none while it's null), newest first. Sends the
+// login token, so your own profile also lists your unpublished items
+function useItemCardsPage(where: Record<string, unknown> | null, page: number) {
+  const { user, loading: authLoading } = useAuth();
+  const [data, setData] = useState<ItemCardsPage | null>(null);
+  const [error, setError] = useState(false);
+  const whereKey = JSON.stringify(where);
+
+  useEffect(() => {
+    const parsedWhere = JSON.parse(whereKey);
+    if (!parsedWhere || authLoading) {
+      return;
+    }
+    let cancelled = false;
+    const fetchPage = async () => {
+      try {
+        const token = await user?.getIdToken();
+        const query = stringify(
+          { ...itemCardQuery, where: parsedWhere, sort: '-createdAt', limit: ITEMS_PER_PAGE, page },
+          { addQueryPrefix: true }
+        );
+        const response = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}/api/items${query}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result: ItemCardsPage = await response.json();
+        if (!cancelled) {
+          setData(result);
+          setError(false);
+        }
+      } catch (err) {
+        console.error('Error fetching items:', err);
+        if (!cancelled) {
+          setError(true);
+        }
+      }
+    };
+    fetchPage();
+    return () => {
+      cancelled = true;
+    };
+  }, [whereKey, page, user, authLoading]);
+
+  return { data, error };
+}
 
 // Prefix bare domains (e.g. "example.com") with https:// so they aren't treated as relative paths
 const toExternalHref = (link: string) => {
@@ -50,17 +108,24 @@ function ProfileContent() {
   const [profileData, setProfileData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [itemsData, setItemsData] = useState<ItemType[]>([]);
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [currentItemsPage, setCurrentItemsPage] = useState(1);
   const [currentFavoritesPage, setCurrentFavoritesPage] = useState(1);
-  const itemsPerPage = 12;
 
   // Id of the user last fetched. The page stays mounted when only :userId changes (e.g. from
   // your own favorites to another author), so this has to be per user, not a plain flag
   const fetchedRef = useRef<string | null>(null);
 
   const isOwnProfile = location.pathname === '/profile/me' || userId === payloadUser?.id;
+  const profileUserId = isOwnProfile ? payloadUser?.id : userId;
+  const authoredItems = useItemCardsPage(
+    profileUserId ? { author: { equals: profileUserId } } : null,
+    currentItemsPage
+  );
+  const favoriteItems = useItemCardsPage(
+    profileUserId ? { favoritedBy: { equals: profileUserId } } : null,
+    currentFavoritesPage
+  );
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -72,7 +137,6 @@ function ProfileContent() {
         setLoading(true);
         // Don't show the previous user's items or pages while this one loads
         setProfileData(null);
-        setItemsData([]);
         setCurrentItemsPage(1);
         setCurrentFavoritesPage(1);
 
@@ -88,10 +152,11 @@ function ProfileContent() {
         }
 
         // Public profiles work without a token; send one when logged in so the API includes
-        // fields only the user themselves (or an admin) may see, such as email
+        // fields only the user themselves (or an admin) may see, such as email. Their items and
+        // favorites are paged separately
         const token = await user?.getIdToken();
         const response = await fetch(
-          `${import.meta.env.VITE_PAYLOAD_API_URL}/api/users/${targetUserId}?depth=2`,
+          `${import.meta.env.VITE_PAYLOAD_API_URL}/api/users/${targetUserId}?depth=1&joins[items]=false&joins[favorites]=false`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
         if (!response.ok) {
@@ -99,7 +164,6 @@ function ProfileContent() {
         }
         const userData: User = await response.json();
         setProfileData(userData);
-        setItemsData(userData.items?.docs ?? []);
 
         setError(null);
         fetchedRef.current = targetUserId;
@@ -127,19 +191,6 @@ function ProfileContent() {
     }
   }, [isOwnProfile, userId, payloadUser?.id, user, makeRequest]);
 
-  // Add these functions to handle pagination
-  const paginateItems = (items: ItemType[]) => {
-    const startIndex = (currentItemsPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return items.slice(startIndex, endIndex);
-  };
-
-  const paginateFavorites = (favorites: ItemType[]) => {
-    const startIndex = (currentFavoritesPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return favorites.slice(startIndex, endIndex);
-  };
-
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -147,8 +198,6 @@ function ProfileContent() {
       </Container>
     );
   }
-
-  const favorites = profileData?.favorites?.docs ?? [];
 
   if (error) {
     return (
@@ -310,7 +359,9 @@ function ProfileContent() {
           </div>
         </Stack>
 
-        {isOwnProfile && profileData && <AccountData user={profileData} />}
+        {isOwnProfile && profileData && (
+          <AccountData user={profileData} itemCount={authoredItems.data?.totalDocs ?? 0} />
+        )}
 
         {/* Add Modal */}
         <Modal
@@ -350,13 +401,17 @@ function ProfileContent() {
 
           <Tabs.Panel value="items" pt="xl">
             <Grid>
-              {loading ? (
+              {authoredItems.error ? (
+                <Grid.Col>
+                  <Text c="red">Failed to load items.</Text>
+                </Grid.Col>
+              ) : !authoredItems.data ? (
                 <Grid.Col>
                   <Text>Loading items...</Text>
                 </Grid.Col>
-              ) : itemsData.length > 0 ? (
+              ) : authoredItems.data.docs.length > 0 ? (
                 <>
-                  {paginateItems(itemsData).map((item) => (
+                  {authoredItems.data.docs.map((item) => (
                     <Grid.Col key={item.id} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
                       <Item
                         id={item.id}
@@ -388,11 +443,11 @@ function ProfileContent() {
                       />
                     </Grid.Col>
                   ))}
-                  {Math.ceil(itemsData.length / itemsPerPage) > 1 && (
+                  {authoredItems.data.totalPages > 1 && (
                     <Grid.Col span={12}>
                       <Group justify="center" mt="md">
                         <Pagination
-                          total={Math.ceil(itemsData.length / itemsPerPage)}
+                          total={authoredItems.data.totalPages}
                           value={currentItemsPage}
                           onChange={setCurrentItemsPage}
                           color="blue"
@@ -411,9 +466,17 @@ function ProfileContent() {
 
           <Tabs.Panel value="favorites" pt="xl">
             <Grid>
-              {favorites.length > 0 ? (
+              {favoriteItems.error ? (
+                <Grid.Col>
+                  <Text c="red">Failed to load favorites.</Text>
+                </Grid.Col>
+              ) : !favoriteItems.data ? (
+                <Grid.Col>
+                  <Text>Loading favorites...</Text>
+                </Grid.Col>
+              ) : favoriteItems.data.docs.length > 0 ? (
                 <>
-                  {paginateFavorites(favorites).map((item) => (
+                  {favoriteItems.data.docs.map((item) => (
                     <Grid.Col key={item.id} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
                       <Item
                         id={item.id}
@@ -445,11 +508,11 @@ function ProfileContent() {
                       />
                     </Grid.Col>
                   ))}
-                  {Math.ceil(favorites.length / itemsPerPage) > 1 && (
+                  {favoriteItems.data.totalPages > 1 && (
                     <Grid.Col span={12}>
                       <Group justify="center" mt="md">
                         <Pagination
-                          total={Math.ceil(favorites.length / itemsPerPage)}
+                          total={favoriteItems.data.totalPages}
                           value={currentFavoritesPage}
                           onChange={setCurrentFavoritesPage}
                           color="blue"

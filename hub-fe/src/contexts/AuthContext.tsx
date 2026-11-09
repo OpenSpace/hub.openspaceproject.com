@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { notifications } from '@mantine/notifications';
 import { auth } from '../firebase/config'; // We'll create this next
+import { ItemType } from '../utils/tagUtils';
 
 export const UPLOADS_DISABLED_MESSAGE = 'Uploading currently disabled';
 export const SIGNIN_DISABLED_MESSAGE = 'Login and sign up currently disabled';
@@ -21,24 +22,17 @@ interface PayloadUser {
   // Add other Payload user fields as needed
 }
 
+// The site-config global (hub-be/src/globals/site-config.ts)
 interface SiteConfig {
-  id: string;
-  globalType: string;
-  createdAt: string;
-  updatedAt: string;
-  config: {
-    upload: boolean;
-    signin: boolean;
-    // Missing counts as true, so older configs keep showing the favorite counts
-    showFavoriteCounts?: boolean;
-    // Same for the download count on the item detail page
-    showDownloadCounts?: boolean;
-    // Unlike the switches above, missing counts as false: the Import buttons only show when this is true
-    allowImport?: boolean;
-    versions: string[];
-    itemTypes: string[];
-    licenses: string[];
-  };
+  // Unset switches count as on, except allowImport, which is off unless true
+  upload?: boolean | null;
+  signin?: boolean | null;
+  showFavoriteCounts?: boolean | null;
+  showDownloadCounts?: boolean | null;
+  allowImport?: boolean | null;
+  versions: string[];
+  itemTypes: ItemType[];
+  licenses: string[];
 }
 
 interface AuthContextType {
@@ -180,11 +174,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     payloadUser,
     siteConfig,
     uploadsEnabled:
-      siteConfig?.config.upload !== false || Boolean(payloadUser?.role?.includes('admin')),
-    signinEnabled: siteConfig?.config.signin !== false,
-    showFavoriteCounts: siteConfig?.config.showFavoriteCounts !== false,
-    showDownloadCounts: siteConfig?.config.showDownloadCounts !== false,
-    allowImport: siteConfig?.config.allowImport === true,
+      siteConfig?.upload !== false || Boolean(payloadUser?.role?.includes('admin')),
+    signinEnabled: siteConfig?.signin !== false,
+    showFavoriteCounts: siteConfig?.showFavoriteCounts !== false,
+    showDownloadCounts: siteConfig?.showDownloadCounts !== false,
+    allowImport: siteConfig?.allowImport === true,
     loading,
     error,
     logout,

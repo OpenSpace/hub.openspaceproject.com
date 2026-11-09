@@ -113,8 +113,7 @@ export default buildConfig({
   // A fresh database has no site config, which the frontend and item validation (OpenSpace
   // versions) need, so start it with the defaults and their tags
   onInit: async (payload) => {
-    const { config } = await payload.findGlobal({ slug: 'site-config', depth: 0 })
-    if (!config) {
+    if (!(await payload.db.findGlobal({ slug: 'site-config' }))) {
       payload.logger.info('No site config yet: adding the defaults and their tags')
       await seedGlobalConfig(payload)
       await seedTags(payload)

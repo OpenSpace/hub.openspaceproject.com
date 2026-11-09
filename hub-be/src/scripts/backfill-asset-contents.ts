@@ -1,8 +1,7 @@
 import { Payload } from 'payload'
 import fs from 'fs/promises'
-import { unzipSync } from 'fflate'
 import { storageRoot, storedFilePath, UPLOADS_DIR } from '@/storage/userFolders'
-import { listZipContents } from '@/collections/AssetBundles'
+import { listZipContents, readZipEntries, ZipEntries } from '@/collections/AssetBundles'
 
 // Record the file list of every stored .zip bundle that doesn't have one yet.
 // Only reads the zips; the stored files are not changed
@@ -20,10 +19,10 @@ const backfillAssetContents = async (payload: Payload) => {
       continue
     }
 
-    let zipData: Record<string, Uint8Array>
+    let zipEntries: ZipEntries
     try {
       const buffer = await fs.readFile(storedFilePath(storageRoot(UPLOADS_DIR, 'asset-bundles'), bundle.prefix, bundle.filename))
-      zipData = unzipSync(new Uint8Array(buffer))
+      zipEntries = readZipEntries(new Uint8Array(buffer))
     } catch (error) {
       console.warn(`Skipping ${bundle.filename}: could not read zip`, error)
       continue
@@ -32,7 +31,7 @@ const backfillAssetContents = async (payload: Payload) => {
     await payload.update({
       collection: 'asset-bundles',
       id: bundle.id,
-      data: { contents: listZipContents(zipData) },
+      data: { contents: listZipContents(zipEntries) },
     })
     updated++
   }

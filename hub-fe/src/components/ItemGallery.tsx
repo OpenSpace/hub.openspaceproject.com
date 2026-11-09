@@ -167,72 +167,81 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
         </Stack>
       )}
 
-      {/* {propLoading ? (
-        <Center>
-          <Loader color={colorScheme.colorScheme === 'dark' ? theme.white : theme.colors.dark[7]} />
-        </Center>
-      ) : propError ? (
+      {propError ? (
         <Alert color="red" title="Error" variant="light">
           {propError}
         </Alert>
-      ) : propItems?.length === 0 ? (
-        <Alert color="blue" title="No Items Found" variant="light">
-          Try adjusting your search or filters
-        </Alert>
-      ) : ( */}
-      <>
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
-          {propItems?.map((item) => (
-            <Item
-              key={item.id}
-              id={item.id}
-              title={item.title}
-              description={item.description}
-              type={item.type}
-              author={item.author}
-              license={item.license}
-              openspaceVersion={item.openspaceVersion}
-              createdAt={item.createdAt}
-              updatedAt={item.updatedAt}
-              favoritedBy={item.favoritedBy}
-              tags={item.tags}
-              image={{
-                url: item.image?.url || '',
-                alt: item.image?.alt || item.title,
-              }}
-              assetBundle={{
-                url: item.assetBundle?.url || '',
-                filename: item.assetBundle?.filename,
-                entryPath: item.assetBundle?.entryPath,
-              }}
-              currentVersion={item.currentVersion}
-              archives={item.archives}
+      ) : !propItems?.length ? (
+        propLoading ? (
+          <Center>
+            <Loader
+              color={colorScheme.colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
             />
-          ))}
-        </SimpleGrid>
+          </Center>
+        ) : (
+          <Alert color="blue" title="No Items Found" variant="light">
+            Try adjusting your search or filters
+          </Alert>
+        )
+      ) : (
+        <>
+          {/* Keep the previous results visible while the next ones load */}
+          <SimpleGrid
+            cols={{ base: 1, sm: 2, md: 3, lg: 4 }}
+            spacing="md"
+            style={{ opacity: propLoading ? 0.5 : 1, transition: 'opacity 150ms' }}
+          >
+            {propItems?.map((item) => (
+              <Item
+                key={item.id}
+                id={item.id}
+                title={item.title}
+                description={item.description}
+                type={item.type}
+                author={item.author}
+                license={item.license}
+                openspaceVersion={item.openspaceVersion}
+                createdAt={item.createdAt}
+                updatedAt={item.updatedAt}
+                favoritedBy={item.favoritedBy}
+                tags={item.tags}
+                image={{
+                  url: item.image?.url || '',
+                  alt: item.image?.alt || item.title,
+                }}
+                assetBundle={{
+                  url: item.assetBundle?.url || '',
+                  filename: item.assetBundle?.filename,
+                  entryPath: item.assetBundle?.entryPath,
+                }}
+                currentVersion={item.currentVersion}
+                archives={item.archives}
+              />
+            ))}
+          </SimpleGrid>
 
-        {/* Pagination controls */}
-        <Group justify="center" mt="md" mb="md">
-          <Button
-            variant="light"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <Text>
-            Page {currentPage} of {totalPages}
-          </Text>
-          <Button
-            variant="light"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </Group>
-      </>
-      {/* )} */}
+          {/* Pagination controls */}
+          <Group justify="center" mt="md" mb="md">
+            <Button
+              variant="light"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              Previous
+            </Button>
+            <Text>
+              Page {currentPage} of {totalPages}
+            </Text>
+            <Button
+              variant="light"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              Next
+            </Button>
+          </Group>
+        </>
+      )}
     </Stack>
   );
 };

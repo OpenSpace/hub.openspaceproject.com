@@ -1,8 +1,10 @@
 import { isAdmin, readVersionsOfReadableItems } from '@/Access'
-import { normalizeOpenspaceVersion, validateOpenspaceVersion } from '@/validation/openspaceVersion'
+import { ITEM_TYPES } from '@/itemTypes'
+import { normalizeOpenspaceVersion } from '@/validation/openspaceVersion'
 import type { CollectionConfig, Field } from 'payload'
 
-// Define the version snapshot structure
+// Copies of item values, which were checked against the site config when the item was saved.
+// Checking them again would fail for options since taken off the site config lists
 const VersionSnapshot: Field[] = [
   {
     name: 'title',
@@ -15,31 +17,15 @@ const VersionSnapshot: Field[] = [
   {
     name: 'type',
     type: 'select',
-    options: ['asset', 'profile', 'recording', 'webpanel', 'config', 'showcomposer', 'package'],
+    options: [...ITEM_TYPES],
   },
   {
     name: 'license',
-    type: 'select',
-    options: [
-      'CC BY',
-      'CC BY-SA',
-      'CC BY-NC',
-      'CC BY-NC-SA',
-      'CC BY-ND',
-      'CC BY-NC-ND',
-      'CC0',
-      'MIT',
-      'Apache',
-      'GPL',
-      'LGPL',
-      'BSD',
-      'Proprietary',
-    ],
+    type: 'text',
   },
   {
     name: 'openspaceVersion',
     type: 'text',
-    validate: validateOpenspaceVersion,
     hooks: { beforeValidate: [normalizeOpenspaceVersion] },
   },
   {

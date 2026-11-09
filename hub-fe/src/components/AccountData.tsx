@@ -20,11 +20,12 @@ import { User } from '../types/users';
 
 interface AccountDataProps {
   user: User;
+  itemCount: number;
 }
 
 // "Your data" section on your own profile: download what the Hub holds about you, or delete
 // your account and everything you uploaded (GDPR rights of access and erasure)
-export function AccountData({ user }: AccountDataProps) {
+export function AccountData({ user, itemCount }: AccountDataProps) {
   const { makeRequest } = useAuthenticatedRequest();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -84,8 +85,6 @@ export function AccountData({ user }: AccountDataProps) {
       setDeleting(false);
     }
   };
-
-  const itemCount = user.items?.docs.length ?? 0;
 
   return (
     <Stack gap="xs" mt="xl">

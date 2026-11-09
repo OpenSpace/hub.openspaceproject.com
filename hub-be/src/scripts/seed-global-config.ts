@@ -1,7 +1,9 @@
 import { Payload } from "payload"
+import { ITEM_TYPES } from "@/itemTypes"
+import type { SiteConfig } from "@/payload-types"
 
 // Site options for a fresh database. The tag seed creates a tag for each version, license and
-// item type listed here, so this is the one place to update them
+// item type listed here
 export const defaultSiteConfig = {
   upload: true,
   signin: true,
@@ -13,15 +15,7 @@ export const defaultSiteConfig = {
     "0.21",
     "0.20"
   ],
-  itemTypes: [
-    "asset",
-    "profile",
-    "recording",
-    "webpanel",
-    "config",
-    "package",
-    "showcomposer"
-  ],
+  itemTypes: [...ITEM_TYPES],
   licenses: [
     "CC BY",
     "CC BY-SA",
@@ -37,15 +31,12 @@ export const defaultSiteConfig = {
     "BSD",
     "Proprietary"
   ]
-}
+} satisfies Omit<SiteConfig, 'id'>
 
 const seedGlobalConfig = async (payload: Payload) => {
-  // Create or update the global config
   await payload.updateGlobal({
     slug: 'site-config',
-    data: {
-      config: defaultSiteConfig
-    }
+    data: defaultSiteConfig
   })
 }
 

@@ -1,11 +1,12 @@
 import { Container } from '@mantine/core';
 import ItemGallery from '../components/ItemGallery';
 import { useItems } from '../hooks/useItems';
+import { ItemType } from '../utils/tagUtils';
 
 export function ItemsPage({
   type,
 }: {
-  type: 'asset' | 'profile' | 'recording' | 'webpanel' | 'config' | 'package' | 'showcomposer' | null;
+  type: ItemType | null;
 }) {
   const {
     items,

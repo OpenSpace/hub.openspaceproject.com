@@ -1,9 +1,8 @@
 import { Payload } from 'payload'
 import fs from 'fs/promises'
 import path from 'path'
-import { unzipSync } from 'fflate'
 import { storageRoot, storedFilePath, UPLOADS_DIR } from '@/storage/userFolders'
-import { findAssetEntryPath } from '@/collections/AssetBundles'
+import { findAssetEntryPath, readZipEntries, ZipEntries } from '@/collections/AssetBundles'
 
 const backfillAssetEntryPath = async (payload: Payload) => {
   const bundles = await payload.find({
@@ -20,10 +19,10 @@ const backfillAssetEntryPath = async (payload: Payload) => {
       continue
     }
 
-    let zipData: Record<string, Uint8Array>
+    let zipEntries: ZipEntries
     try {
       const buffer = await fs.readFile(storedFilePath(storageRoot(UPLOADS_DIR, 'asset-bundles'), bundle.prefix, bundle.filename))
-      zipData = unzipSync(new Uint8Array(buffer))
+      zipEntries = readZipEntries(new Uint8Array(buffer))
     } catch (error) {
       console.warn(`Skipping ${bundle.filename}: could not read zip`, error)
       continue
@@ -32,8 +31,8 @@ const backfillAssetEntryPath = async (payload: Payload) => {
     // Payload de-duplicates stored filenames (foo.zip -> foo-1.zip), so also try without the suffix
     const baseName = path.basename(bundle.filename, path.extname(bundle.filename))
     const entryPath =
-      findAssetEntryPath(zipData, baseName) ||
-      findAssetEntryPath(zipData, baseName.replace(/-\d+$/, ''))
+      findAssetEntryPath(zipEntries, baseName) ||
+      findAssetEntryPath(zipEntries, baseName.replace(/-\d+$/, ''))
 
     if (!entryPath) {
       console.warn(`Skipping ${bundle.filename}: no matching .asset file found`)

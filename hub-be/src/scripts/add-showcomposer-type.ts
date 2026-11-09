@@ -5,9 +5,7 @@ import { Payload } from 'payload'
 // full seed-global-config script would overwrite versions/licenses too, which
 // may have since diverged from what's hardcoded in that script).
 const addShowcomposerType = async (payload: Payload) => {
-  const siteConfig = await payload.findGlobal({ slug: 'site-config' })
-  const config = (siteConfig?.config || {}) as { itemTypes?: string[] }
-  const itemTypes = config.itemTypes || []
+  const itemTypes = (await payload.findGlobal({ slug: 'site-config', depth: 0 })).itemTypes ?? []
 
   if (itemTypes.includes('showcomposer')) {
     console.log('showcomposer is already in itemTypes, nothing to do')
@@ -16,12 +14,7 @@ const addShowcomposerType = async (payload: Payload) => {
 
   await payload.updateGlobal({
     slug: 'site-config',
-    data: {
-      config: {
-        ...config,
-        itemTypes: [...itemTypes, 'showcomposer'],
-      },
-    },
+    data: { itemTypes: [...itemTypes, 'showcomposer'] },
   })
 
   console.log('Added showcomposer to site-config itemTypes')

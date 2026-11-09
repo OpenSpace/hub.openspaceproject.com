@@ -1,5 +1,3 @@
-import { Item } from './items';
-
 export interface User {
   id: string;
   name: string;
@@ -9,9 +7,6 @@ export interface User {
   contactEmail?: string | null;
   institution: string;
   slackHandle?: string | null;
-  // Only the items the viewer may see
-  items?: { docs: Item[] } | null;
-  favorites?: { docs: Item[] } | null;
   updatedAt: Date;
   createdAt: Date;
   email: string;

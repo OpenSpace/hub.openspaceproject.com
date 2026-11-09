@@ -9,6 +9,7 @@ import {
   readUsedOrOwnFiles,
   UPLOADS_DISABLED_MESSAGE,
 } from '@/Access'
+import { ITEM_TYPES } from '@/itemTypes'
 import { setUserFolder, UPLOADS_DIR, userFolderField } from '@/storage/userFolders'
 //Allow different types and file extensions based on type field:
 // Recording:   *.osrec    (binary)    *.osrectxt    (text)
@@ -18,9 +19,24 @@ import { setUserFolder, UPLOADS_DIR, userFolderField } from '@/storage/userFolde
 
 const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-// Return the path of the first entry in an unzipped bundle matching `pattern`
-const findZipEntry = (zipData: Record<string, Uint8Array>, pattern: RegExp): string | undefined =>
-  Object.keys(zipData).find((fileName) => pattern.test(fileName))
+// Path -> uncompressed size of every entry in a zip
+export type ZipEntries = Record<string, number>
+
+// Reads only the zip's directory; sizes are as the zip states them, nothing is decompressed
+export const readZipEntries = (data: Uint8Array): ZipEntries => {
+  const entries: ZipEntries = {}
+  unzipSync(data, {
+    filter: (entry) => {
+      entries[entry.name] = entry.originalSize
+      return false
+    },
+  })
+  return entries
+}
+
+// Return the path of the first entry in a zip bundle matching `pattern`
+const findZipEntry = (zipEntries: ZipEntries, pattern: RegExp): string | undefined =>
+  Object.keys(zipEntries).find((fileName) => pattern.test(fileName))
 
 // Largest bundle accepted, both as uploaded and (for .zip files) once unzipped
 export const MAX_BUNDLE_BYTES = 512e6
@@ -28,20 +44,13 @@ const MAX_BUNDLE_LABEL = '512 MB'
 
 class BundleTooLargeError extends Error {}
 
-// Unzip a bundle in memory, refusing it before extracting anything if its files add up to more
-// than MAX_BUNDLE_BYTES. fflate extracts each file into a buffer of the size its header states,
-// so a zip can't claim small sizes here and then expand past them (a "zip bomb")
-const unzipBundle = (data: Uint8Array): Record<string, Uint8Array> => {
-  let total = 0
-  return unzipSync(data, {
-    filter: (entry) => {
-      total += entry.originalSize
-      if (total > MAX_BUNDLE_BYTES) {
-        throw new BundleTooLargeError(`Unzipped bundle is larger than ${MAX_BUNDLE_LABEL}`)
-      }
-      return true
-    },
-  })
+const readBundleEntries = (data: Uint8Array): ZipEntries => {
+  const entries = readZipEntries(data)
+  const total = Object.values(entries).reduce((sum, size) => sum + size, 0)
+  if (total > MAX_BUNDLE_BYTES) {
+    throw new BundleTooLargeError(`Unzipped bundle is larger than ${MAX_BUNDLE_LABEL}`)
+  }
+  return entries
 }
 
 const assetEntryPattern = (baseName: string) =>
@@ -65,8 +74,8 @@ export const isUnsafeZipPath = (fileName: string) =>
 
 // Packages are unzipped straight into user/, so every entry must sit in one of its folders.
 // Returns an error message, or undefined if the package is valid
-const checkPackageZip = (zipData: Record<string, Uint8Array>): string | undefined => {
-  const fileNames = Object.keys(zipData)
+const checkPackageZip = (zipEntries: ZipEntries): string | undefined => {
+  const fileNames = Object.keys(zipEntries)
     // Some Windows zip tools write \ instead of / between folders
     .map((fileName) => fileName.replace(/\\/g, '/'))
     // Ignore macOS Finder metadata
@@ -109,20 +118,20 @@ export interface ZipContentsEntry {
   size: number
 }
 
-// Files inside an unzipped bundle with their uncompressed sizes, skipping folder entries.
+// Files inside a zip bundle with their uncompressed sizes, skipping folder entries.
 // Stored on the bundle so the hub can show them and imports can check for overwrites up front
-export const listZipContents = (zipData: Record<string, Uint8Array>): ZipContentsEntry[] =>
-  Object.entries(zipData)
+export const listZipContents = (zipEntries: ZipEntries): ZipContentsEntry[] =>
+  Object.entries(zipEntries)
     .filter(([fileName]) => !fileName.endsWith('/'))
-    .map(([fileName, data]) => ({ path: fileName, size: data.byteLength }))
+    .map(([fileName, size]) => ({ path: fileName, size }))
 
-// Find the path of `<baseName>.asset` (or `.jasset`) inside an unzipped asset bundle, e.g. "foo/foo.asset".
+// Find the path of `<baseName>.asset` (or `.jasset`) inside a zip asset bundle, e.g. "foo/foo.asset".
 // Stored on the bundle so imports don't depend on the (possibly de-duplicated, e.g. foo-1.zip)
 // stored filename.
 export const findAssetEntryPath = (
-  zipData: Record<string, Uint8Array>,
+  zipEntries: ZipEntries,
   baseName: string,
-): string | undefined => findZipEntry(zipData, assetEntryPattern(baseName))
+): string | undefined => findZipEntry(zipEntries, assetEntryPattern(baseName))
 
 export const AssetBundles: CollectionConfig = {
   slug: 'asset-bundles',
@@ -170,7 +179,7 @@ export const AssetBundles: CollectionConfig = {
     {
       name: 'type',
       type: 'select',
-      options: ['asset', 'profile', 'recording', 'webpanel', 'config', 'showcomposer', 'package'],
+      options: [...ITEM_TYPES],
     },
     {
       // Path of the entry .asset file inside an asset .zip, relative to the zip root
@@ -236,10 +245,10 @@ export const AssetBundles: CollectionConfig = {
           let isValid = false
           let errorMessage = ''
           let entryPath: string | undefined
-          // Read and unzip once; every check below works on these
+          // Read the file and its zip entries once; every check below works on these
           const fileData = new Uint8Array(await file.arrayBuffer())
-          const zipData = fileExt === '.zip' ? unzipBundle(fileData) : undefined
-          const unsafePath = zipData && Object.keys(zipData).find(isUnsafeZipPath)
+          const zipEntries = fileExt === '.zip' ? readBundleEntries(fileData) : undefined
+          const unsafePath = zipEntries && Object.keys(zipEntries).find(isUnsafeZipPath)
           if (unsafePath) {
             return new Response(`ZIP contains an invalid path: ${unsafePath}`, { status: 400 })
           }
@@ -259,7 +268,7 @@ export const AssetBundles: CollectionConfig = {
               if (fileExt === '.zip') {
                 // index.html must sit in a top-level folder (e.g. apc40/index.html), since the
                 // import unzips straight into the user webpanels folder
-                isValid = Boolean(zipData && findZipEntry(zipData, /^[^/]+\/index\.html$/))
+                isValid = Boolean(zipEntries && findZipEntry(zipEntries, /^[^/]+\/index\.html$/))
                 errorMessage = 'Webpanel ZIP must contain a folder with index.html inside (e.g. mypanel/index.html)'
               } else {
                 isValid = fileExt === '.html'
@@ -269,7 +278,7 @@ export const AssetBundles: CollectionConfig = {
 
             case 'config':
               if (fileExt === '.zip') {
-                isValid = Boolean(zipData && findZipEntry(zipData, /(^|\/)[^/]+\.json$/))
+                isValid = Boolean(zipEntries && findZipEntry(zipEntries, /(^|\/)[^/]+\.json$/))
                 errorMessage = 'Config .zip must contain a .json file'
               } else {
                 isValid = fileExt === '.json';
@@ -279,7 +288,7 @@ export const AssetBundles: CollectionConfig = {
             case 'asset':
               if (fileExt === '.zip') {
                 entryPath =
-                  zipData && findAssetEntryPath(zipData, path.basename(file.name, '.zip'))
+                  zipEntries && findAssetEntryPath(zipEntries, path.basename(file.name, '.zip'))
                 isValid = Boolean(entryPath)
                 errorMessage = 'Asset ZIP must contain *.asset or *.jasset with same name as zip file'
               } else {
@@ -289,7 +298,7 @@ export const AssetBundles: CollectionConfig = {
               break
             case 'showcomposer':
               if (fileExt === '.zip') {
-                isValid = Boolean(zipData && findZipEntry(zipData, /(^|\/)data\.json$/))
+                isValid = Boolean(zipEntries && findZipEntry(zipEntries, /(^|\/)data\.json$/))
                 errorMessage = 'ShowComposer Panel .zip must contain a data.json file'
               } else {
                 isValid = false;
@@ -297,8 +306,8 @@ export const AssetBundles: CollectionConfig = {
               }
               break
             case 'package':
-              if (zipData) {
-                const packageError = checkPackageZip(zipData)
+              if (zipEntries) {
+                const packageError = checkPackageZip(zipEntries)
                 isValid = !packageError
                 errorMessage = packageError ?? ''
               } else {
@@ -335,7 +344,7 @@ export const AssetBundles: CollectionConfig = {
           //       },
           //     })
           // :
-          const contents = zipData ? listZipContents(zipData) : undefined
+          const contents = zipEntries ? listZipContents(zipEntries) : undefined
 
           const result = await req.payload.create({
             collection: 'asset-bundles',

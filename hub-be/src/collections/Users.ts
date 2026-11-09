@@ -87,6 +87,9 @@ export const Users: CollectionConfig = {
             const users = await payload.find({
               collection: 'users',
               where: { firebaseUID: { equals: firebaseUID } },
+              depth: 0,
+              limit: 1,
+              pagination: false,
               joins: false,
             })
 
@@ -192,23 +195,19 @@ export const Users: CollectionConfig = {
       defaultValue: '',
     },
 
-    // Worked out from the items when read, only listing items the reader may see. No limit,
-    // as the profile page shows them all; maxDepth 2 so its items come with images and authors
+    // Worked out from the items when read, only listing items the reader may see. The profile
+    // page pages through /api/items instead, so these keep Payload's default limit
     {
       name: 'items',
       type: 'join',
       collection: 'items',
       on: 'author',
-      defaultLimit: 0,
-      maxDepth: 2,
     },
     {
       name: 'favorites',
       type: 'join',
       collection: 'items',
       on: 'favoritedBy',
-      defaultLimit: 0,
-      maxDepth: 2,
     },
     {
       name: 'password',
