@@ -22,15 +22,15 @@ import { AccountData } from '../components/AccountData';
 import Item from '../components/Item';
 import { UserProfileForm } from '../components/UserProfileForm';
 import { useAuth } from '../contexts/AuthContext';
-import { Item as ItemType } from '../types/items';
+import { Populated } from '../types/items';
 import { User } from '../types/users';
 import { apiFetch, apiUrl } from '../utils/api';
-import { itemCardQuery } from '../utils/itemCardQuery';
+import { ItemCard, itemCardQuery } from '../utils/itemCardQuery';
 
 const ITEMS_PER_PAGE = 12;
 
 interface ItemCardsPage {
-  docs: ItemType[];
+  docs: ItemCard[];
   totalDocs: number;
   totalPages: number;
 }
@@ -97,7 +97,7 @@ function ProfileContent() {
   const { user, payloadUser } = useAuth();
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
-  const [profileData, setProfileData] = useState<User | null>(null);
+  const [profileData, setProfileData] = useState<Populated<User, 'thumbnail'> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editModalOpened, setEditModalOpened] = useState(false);
@@ -146,7 +146,7 @@ function ProfileContent() {
         // Public profiles work without a token; send one when logged in so the API includes
         // fields only the user themselves (or an admin) may see, such as email. Their items and
         // favorites are paged separately
-        const userData = await apiFetch<User>(
+        const userData = await apiFetch<Populated<User, 'thumbnail'>>(
           `/api/users/${targetUserId}?depth=1&joins[items]=false&joins[favorites]=false`,
           { user }
         );
@@ -406,8 +406,8 @@ function ProfileContent() {
                         license={item.license}
                         openspaceVersion={item.openspaceVersion}
                         description={item.description}
-                        updatedAt={new Date(item.updatedAt)}
-                        createdAt={new Date(item.createdAt)}
+                        updatedAt={item.updatedAt}
+                        createdAt={item.createdAt}
                         favoritedBy={item.favoritedBy}
                         tags={item.tags}
                         currentVersion={item.currentVersion}
@@ -471,8 +471,8 @@ function ProfileContent() {
                         license={item.license}
                         openspaceVersion={item.openspaceVersion}
                         description={item.description}
-                        updatedAt={new Date(item.updatedAt)}
-                        createdAt={new Date(item.createdAt)}
+                        updatedAt={item.updatedAt}
+                        createdAt={item.createdAt}
                         favoritedBy={item.favoritedBy}
                         tags={item.tags}
                         currentVersion={item.currentVersion}

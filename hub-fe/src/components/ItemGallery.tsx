@@ -16,7 +16,8 @@ import {
   useMantineTheme,
 } from '@mantine/core';
 import { TagFacet } from '@/hooks/useItems';
-import { Item as ItemType, Tag } from '@/types/items';
+import { TagRef } from '@/types/items';
+import { ItemCard } from '@/utils/itemCardQuery';
 import { getTagDisplayName, getTagLabel, getTagStyle } from '@/utils/tagUtils';
 import Item from './Item';
 
@@ -27,7 +28,7 @@ const tagGroupRank = (type: string) => {
 };
 
 interface ItemGalleryProps {
-  items?: ItemType[];
+  items?: ItemCard[];
   loading?: boolean;
   error?: string | null;
   currentPage: number;
@@ -36,9 +37,9 @@ interface ItemGalleryProps {
   onSearch: (query: string) => void;
   onSort: (sort: string) => void;
   sortBy: string;
-  selectedTags: Tag[];
+  selectedTags: TagRef[];
   tagFacets: TagFacet[];
-  onTagSelect: (tag: Tag) => void;
+  onTagSelect: (tag: TagRef) => void;
   onTagRemove: (tagId: string) => void;
 }
 
@@ -141,7 +142,7 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
                 fw={500}
                 c={colorScheme.colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
               >
-                {getTagLabel(group.group as Tag['type'])}:
+                {getTagLabel(group.group as TagRef['type'])}:
               </Text>
               {group.tags.map((tag) => (
                 <Badge

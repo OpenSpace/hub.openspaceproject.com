@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash.debounce';
 import { stringify } from 'qs-esm';
-import { Item, Tag } from '@/types/items';
+import { TagRef } from '@/types/items';
 import { apiFetch } from '@/utils/api';
-import { itemCardQuery } from '@/utils/itemCardQuery';
+import { ItemCard, itemCardQuery } from '@/utils/itemCardQuery';
 
 interface PaginatedResponse {
-  docs: Item[];
+  docs: ItemCard[];
   totalDocs: number;
   limit: number;
   totalPages: number;
@@ -20,7 +20,7 @@ interface PaginatedResponse {
 }
 
 // A tag used by items matching the current filters, with how many of them carry it
-export interface TagFacet extends Tag {
+export interface TagFacet extends TagRef {
   count: number;
 }
 
@@ -32,20 +32,20 @@ interface UseItemsOptions {
 }
 
 interface UseItemsReturn {
-  items: Item[];
+  items: ItemCard[];
   loading: boolean;
   error: string | null;
   currentPage: number;
   totalPages: number;
   searchQuery: string;
   sortBy: string;
-  selectedTags: Tag[];
+  selectedTags: TagRef[];
   // Tags across all items matching the search and selected tags (not just this page)
   tagFacets: TagFacet[];
   handlePageChange: (page: number) => void;
   handleSearch: (query: string) => void;
   handleSort: (sort: string) => void;
-  handleTagSelect: (tag: Tag) => void;
+  handleTagSelect: (tag: TagRef) => void;
   handleTagRemove: (tagId: string) => void;
 }
 
@@ -57,14 +57,14 @@ export function useItems({
   additionalWhere = {},
   initialSort = 'newest',
 }: UseItemsOptions = {}): UseItemsReturn {
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<ItemCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState(initialSort);
-  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<TagRef[]>([]);
   const [tagFacets, setTagFacets] = useState<TagFacet[]>([]);
 
   // Callers often pass a new additionalWhere object each render; key on its contents so
@@ -78,7 +78,7 @@ export function useItems({
   // Every filter as one AND list, so they can't overwrite each other. Each selected tag is
   // its own condition: items must have all of them, so each tag clicked narrows the results
   const buildWhere = useCallback(
-    (search: string, tags: Tag[]) => {
+    (search: string, tags: TagRef[]) => {
       const conditions: Record<string, any>[] = [];
       if (search) {
         conditions.push({
@@ -98,7 +98,7 @@ export function useItems({
   );
 
   const fetchTagFacets = useCallback(
-    async (search: string, tags: Tag[]) => {
+    async (search: string, tags: TagRef[]) => {
       const where = buildWhere(search, tags);
       const cacheKey = JSON.stringify(where);
       const cached = facetCache.get(cacheKey);
@@ -122,7 +122,7 @@ export function useItems({
   );
 
   const fetchItems = useCallback(
-    async (page: number, search: string = '', sort: string = initialSort, tags: Tag[] = []) => {
+    async (page: number, search: string = '', sort: string = initialSort, tags: TagRef[] = []) => {
       try {
         setLoading(true);
 
@@ -188,7 +188,7 @@ export function useItems({
   // Debounced search handler
   const debouncedFetch = useMemo(
     () =>
-      debounce((page: number, search: string, sort: string, tags: Tag[]) => {
+      debounce((page: number, search: string, sort: string, tags: TagRef[]) => {
         fetchItems(page, search, sort, tags);
       }, 100), // 300ms delay
     [fetchItems]
@@ -229,7 +229,7 @@ export function useItems({
     setCurrentPage(1); // Reset to first page when sorting changes
   };
 
-  const handleTagSelect = (tag: Tag) => {
+  const handleTagSelect = (tag: TagRef) => {
     if (!selectedTags.some((t) => t.id === tag.id)) {
       setSelectedTags((prev) => [...prev, tag]);
       setCurrentPage(1); // Reset to first page when adding a tag

@@ -35,8 +35,8 @@ import { ItemTypePlaceholder } from '@/components/ItemTypeIcon';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
 import { useOpenSpaceImport } from '@/hooks/useOpenSpaceImport';
-import { Item as ItemType, Tag, Version } from '@/types/items';
-import { User } from '@/types/users';
+import { ItemDetail, VersionWithFiles } from '@/types/items';
+import { UserRef } from '@/types/users';
 import { apiFetch, ApiError, apiUrl } from '@/utils/api';
 import { getLicenseUrl } from '@/utils/licenseUtils';
 import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
@@ -50,18 +50,18 @@ const ItemDetailPage: React.FC = () => {
   const { payloadUser, user, showFavoriteCounts, showDownloadCounts, allowImport } = useAuth();
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
-  const [item, setItem] = useState<ItemType | null>(null);
+  const [item, setItem] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<User[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
+  const [favorites, setFavorites] = useState<UserRef[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<VersionWithFiles | null>(null);
   const { importToOpenSpace } = useOpenSpaceImport();
   const slackID = import.meta.env.VITE_SLACK_CHANNEL_ID;
   const slackTeam = import.meta.env.VITE_SLACK_TEAM_ID;
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const data = await apiFetch<ItemType>(`/api/items/${id}`, { user });
+        const data = await apiFetch<ItemDetail>(`/api/items/${id}`, { user });
         setItem(data);
         setSelectedVersion(data.currentVersion || null);
         setFavorites(data.favoritedBy || []);
@@ -83,7 +83,7 @@ const ItemDetailPage: React.FC = () => {
 
   const handleFavorite = async () => {
     try {
-      const response = await makeRequest<{ favoritedBy: User[] }>(`/api/items/${id}/favorite`, {
+      const response = await makeRequest<{ favoritedBy: UserRef[] }>(`/api/items/${id}/favorite`, {
         method: 'POST',
       });
       setFavorites(response.favoritedBy);
@@ -144,7 +144,7 @@ const ItemDetailPage: React.FC = () => {
               {displayData.title}
             </Title>
             <Group gap="xs" wrap="wrap">
-              {sortTags(item.tags ?? []).map((tag: Tag) => (
+              {sortTags(item.tags ?? []).map((tag) => (
                 <Badge key={tag.id} style={getTagStyle(tag.type)} size="sm">
                   {getTagDisplayName(tag)}
                 </Badge>
@@ -169,13 +169,13 @@ const ItemDetailPage: React.FC = () => {
                   {displayData.image?.url ? (
                     <Image
                       src={apiUrl(displayData.image.url)}
-                      alt={displayData.title}
+                      alt={displayData.title ?? undefined}
                       fit="contain"
                       style={{ maxHeight: '350px', display: 'block' }}
                     />
                   ) : (
                     <ItemTypePlaceholder
-                      type={displayData.type}
+                      type={displayData.type ?? item.type}
                       height={350}
                       iconSize={120}
                       radius={theme.radius.sm}
@@ -245,7 +245,7 @@ const ItemDetailPage: React.FC = () => {
                   size="sm"
                   c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[2]}
                 >
-                  {linkify(displayData.description)}
+                  {linkify(displayData.description ?? '')}
                 </Text>
               </Card>
 
@@ -403,7 +403,7 @@ const ItemDetailPage: React.FC = () => {
                             },
                           ]
                         : []),
-                      ...(item.archives || []).map((version: Version) => ({
+                      ...(item.archives || []).map((version) => ({
                         value: version.id,
                         label: `Version ${version.version} (${new Date(version.createdAt).toLocaleDateString()})`,
                       })),
@@ -439,7 +439,7 @@ const ItemDetailPage: React.FC = () => {
                           displayData.assetBundle?.url &&
                           importToOpenSpace(
                             apiUrl(displayData.assetBundle.url),
-                            displayData.type,
+                            displayData.type ?? item.type,
                             displayData.assetBundle?.filename,
                             displayData.assetBundle?.entryPath,
                             item.id

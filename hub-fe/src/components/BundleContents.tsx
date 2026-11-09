@@ -63,7 +63,13 @@ const buildTree = (files: BundleFile[]): TreeNodeData[] => {
 };
 
 // Card listing the files of an asset bundle: the contents of a .zip, or the single uploaded file
-export function BundleContents({ filename, filesize }: { filename?: string; filesize?: number }) {
+export function BundleContents({
+  filename,
+  filesize,
+}: {
+  filename?: string | null;
+  filesize?: number | null;
+}) {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   const [files, setFiles] = useState<BundleFile[] | undefined>();

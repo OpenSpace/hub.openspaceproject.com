@@ -25,34 +25,36 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
 import { useOpenSpaceImport } from '@/hooks/useOpenSpaceImport';
-import { Tag } from '@/types/items';
+import { UserRef } from '@/types/users';
 import { apiUrl } from '@/utils/api';
+import { ItemCard } from '@/utils/itemCardQuery';
 import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
 import { trackItem } from '@/utils/trackItem';
 import { ItemTypePlaceholder } from './ItemTypeIcon';
-import { User } from '../types/users';
 import { linkify } from '../utils/textUtils';
 
-interface ItemProps {
+type ItemProps = Pick<
+  ItemCard,
+  | 'id'
+  | 'title'
+  | 'type'
+  | 'author'
+  | 'license'
+  | 'openspaceVersion'
+  | 'description'
+  | 'updatedAt'
+  | 'createdAt'
+  | 'favoritedBy'
+  | 'tags'
+  | 'currentVersion'
+  | 'archives'
+> & {
   image: {
     url: string;
     alt: string;
   };
-  title: string;
-  type: string;
-  author: User;
-  license: string;
-  openspaceVersion: string;
-  description: string;
-  updatedAt: Date;
-  createdAt: Date;
-  favoritedBy?: User[] | null;
-  id: string;
-  tags?: Tag[];
-  currentVersion?: { version: string };
-  archives?: { version: string; createdAt: string }[];
-  assetBundle?: { url: string; filename?: string; entryPath?: string };
-}
+  assetBundle?: { url: string; filename?: string | null; entryPath?: string | null };
+};
 
 // Tighter than the theme's button padding so Import and Download fit side by side in a narrow card
 const cardButtonStyles = { root: { paddingLeft: 10, paddingRight: 10 } };
@@ -76,7 +78,7 @@ const Item: React.FC<ItemProps> = ({
 }) => {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
-  const [favorites, setFavorites] = useState<User[]>(favoritedBy || []);
+  const [favorites, setFavorites] = useState<UserRef[]>(favoritedBy || []);
   const [isHovered, setIsHovered] = useState(false);
   const { makeRequest } = useAuthenticatedRequest();
   const navigate = useNavigate();
@@ -86,7 +88,7 @@ const Item: React.FC<ItemProps> = ({
 
   const handleFavorite = async () => {
     try {
-      const response = await makeRequest<{ favoritedBy: User[] }>(`/api/items/${id}/favorite`, {
+      const response = await makeRequest<{ favoritedBy: UserRef[] }>(`/api/items/${id}/favorite`, {
         method: 'POST',
       });
       setFavorites(response.favoritedBy);

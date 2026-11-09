@@ -1,44 +1,24 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { notifications } from '@mantine/notifications';
+import type { SiteConfig, User as HubUser } from '@payload-types';
 import { auth } from '../firebase/config'; // We'll create this next
 import { apiFetch } from '../utils/api';
-import { ItemType } from '../utils/tagUtils';
 
 export const UPLOADS_DISABLED_MESSAGE = 'Uploading currently disabled';
 export const SIGNIN_DISABLED_MESSAGE = 'Login and sign up currently disabled';
 export const LOGIN_TO_UPLOAD_MESSAGE = 'Log in to upload items';
 
-interface PayloadUser {
-  id: string;
-  email: string;
-  name: string;
-  username: string;
-  link?: string;
-  institution: string;
-  thumbnail: string;
-  // The profile picture's address, looked up from `thumbnail` (an id) after login
+// The account from /api/register (depth 0, so `thumbnail` is an id)
+type PayloadUser = HubUser & {
+  // The profile picture's address, looked up from `thumbnail` after login
   thumbnailUrl?: string | null;
-  role?: string[];
-  // Add other Payload user fields as needed
-}
-
-// The site-config global (hub-be/src/globals/site-config.ts)
-interface SiteConfig {
-  // Unset switches count as on, except allowImport, which is off unless true
-  upload?: boolean | null;
-  signin?: boolean | null;
-  showFavoriteCounts?: boolean | null;
-  showDownloadCounts?: boolean | null;
-  allowImport?: boolean | null;
-  versions: string[];
-  itemTypes: ItemType[];
-  licenses: string[];
-}
+};
 
 interface AuthContextType {
   user: User | null;
   payloadUser: PayloadUser | null;
+  // Unset switches count as on, except allowImport, which is off unless true
   siteConfig: SiteConfig | null;
   // site-config's `upload` switch (admins can always upload); mirrors the API's check
   uploadsEnabled: boolean;

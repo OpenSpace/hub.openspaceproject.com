@@ -31,6 +31,12 @@ import { Tags } from './collections/Tags'
 import { firebaseAuth } from './accounts/firebase'
 import seedGlobalConfig from './scripts/seed-global-config'
 import seedTags from './scripts/seed-tags'
+import type { Config } from './payload-types'
+
+// Declared here instead of in payload-types.ts so hub-fe can import that file without Payload
+declare module 'payload' {
+  export interface GeneratedTypes extends Config {}
+}
 
 // Payload signs its login tokens (e.g. the admin panel's) with this, so a missing or
 // well-known secret would let anyone forge an admin login. Refuse to start without a real one
@@ -126,6 +132,7 @@ export default buildConfig({
   secret: payloadSecret,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
+    declare: false,
   },
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',

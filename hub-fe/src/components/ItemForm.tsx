@@ -29,7 +29,7 @@ import {
   useAuth,
 } from '../contexts/AuthContext';
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
-import { Item } from '../types/items';
+import { Item, ItemDetail } from '../types/items';
 import { link } from 'fs/promises';
 import { apiUrl, uploadFile } from '@/utils/api';
 import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/utils/fieldLimits';
@@ -37,12 +37,12 @@ import { ITEM_TYPE_LABELS } from '@/utils/tagUtils';
 import { fileTree, UPLOAD_INSTRUCTIONS } from '@/utils/uploadInstructions';
 
 interface ItemFormProps {
-  item?: Item;
+  item?: ItemDetail;
   isEdit?: boolean;
 }
 
 // The API accepts the value an item already has even if it was since taken off the site config
-const withCurrent = (options: string[] = [], current?: string) =>
+const withCurrent = (options: string[] = [], current?: string | null) =>
   current && !options.includes(current) ? [...options, current] : options;
 
 // Icon and text as one centered unit, for the file pickers' placeholder and chosen file name

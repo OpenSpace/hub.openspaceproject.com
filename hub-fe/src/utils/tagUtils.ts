@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Tag } from '@/types/items';
+import type { Item, Tag } from '@/types/items';
 
 // Tags are a dark tint of one color with text and a thin border in that color: teal for the
 // type, violet for the version, amber for the license, gray for the rest. Each is a
@@ -51,15 +51,7 @@ export const sortTags = <T extends { type: Tag['type'] }>(tags: T[]): T[] => {
   return [...tags].sort((a, b) => rank(a) - rank(b));
 };
 
-// The item types in hub-be/src/itemTypes.ts
-export type ItemType =
-  | 'asset'
-  | 'profile'
-  | 'recording'
-  | 'webpanel'
-  | 'config'
-  | 'showcomposer'
-  | 'package';
+export type ItemType = Item['type'];
 
 // Pretty labels for item types - the CMS site-config only stores the raw
 // type value, so this is the one place that maps it to display text.

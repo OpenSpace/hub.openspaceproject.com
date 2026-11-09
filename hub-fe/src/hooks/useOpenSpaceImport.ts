@@ -69,8 +69,8 @@ export const useOpenSpaceImport = (options: OpenSpaceImportOptions = {}) => {
   const importToOpenSpace = async (
     url: string,
     type: string,
-    fileName?: string,
-    entryPath?: string,
+    fileName?: string | null,
+    entryPath?: string | null,
     itemId?: string
   ) => {
     const openspace = window.openspace;

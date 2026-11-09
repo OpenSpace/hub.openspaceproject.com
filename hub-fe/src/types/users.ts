@@ -1,29 +1,6 @@
-export interface User {
-  id: string;
-  name: string;
-  username: string;
-  thumbnail?: null | Media;
-  link?: string;
-  contactEmail?: string | null;
-  institution: string;
-  slackHandle?: string | null;
-  updatedAt: Date;
-  createdAt: Date;
-  email: string;
-}
+import type { User } from '@payload-types';
 
-export interface Media {
-  id: string;
-  alt: string;
-  updatedAt: Date;
-  createdAt: Date;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
+export type { Media, User } from '@payload-types';
+
+// How other docs show a user, e.g. an item's author in item cards or the users from /favorite
+export type UserRef = Pick<User, 'id' | 'username'>;

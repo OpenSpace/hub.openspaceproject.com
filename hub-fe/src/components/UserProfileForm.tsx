@@ -17,6 +17,7 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
+import { Populated } from '../types/items';
 import { User } from '../types/users';
 import { apiUrl, uploadFile } from '../utils/api';
 import {
@@ -27,7 +28,7 @@ import {
 } from '../utils/fieldLimits';
 
 interface UserProfileFormProps {
-  user: User;
+  user: Populated<User, 'thumbnail'>;
 }
 
 export function UserProfileForm({ user }: UserProfileFormProps) {

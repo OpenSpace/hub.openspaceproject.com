@@ -18,6 +18,7 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"],
+      "@payload-types": ["../hub-be/src/payload-types.ts"],
       "@test-utils": ["./test-utils"]
     }
   },

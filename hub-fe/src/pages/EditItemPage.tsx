@@ -6,11 +6,11 @@ import { notifications } from '@mantine/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { ItemForm } from '../components/ItemForm';
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
-import { Item } from '../types/items';
+import { ItemDetail } from '../types/items';
 
 export function EditItemPage() {
   const { id } = useParams();
-  const [item, setItem] = useState<Item | null>(null);
+  const [item, setItem] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { makeRequest } = useAuthenticatedRequest();
@@ -25,7 +25,7 @@ export function EditItemPage() {
     }
     const fetchItem = async () => {
       try {
-        const item = await makeRequest<Item>(`/api/items/${id}`);
+        const item = await makeRequest<ItemDetail>(`/api/items/${id}`);
         if (!isAdmin && item.author?.id !== userId) {
           notifications.show({
             title: 'Permission Denied',
