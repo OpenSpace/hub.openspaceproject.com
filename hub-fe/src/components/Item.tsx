@@ -270,7 +270,6 @@ const Item: React.FC<ItemProps> = ({
               importToOpenSpace(
                 `${import.meta.env.VITE_PAYLOAD_API_URL}${assetBundle.url}`,
                 type,
-                title,
                 assetBundle.filename,
                 assetBundle.entryPath,
                 id

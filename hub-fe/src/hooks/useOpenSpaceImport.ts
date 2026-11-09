@@ -29,6 +29,10 @@ const toFileUrl = (absPath: string) => {
 
 const parentDirectory = (path: string) => path.substring(0, normalizePath(path).lastIndexOf('/') + 1);
 
+// Entries that would unzip outside the destination; older uploads weren't checked for them
+const isUnsafeZipPath = (path: string) =>
+  /^([a-zA-Z]:|[\\/])/.test(path) || path.split(/[\\/]/).includes('..');
+
 // Ask before overwriting; resolves false if the user cancels or closes the dialog
 const confirmOverwrite = (files: string[]) =>
   new Promise<boolean>((resolve) => {
@@ -65,7 +69,6 @@ export const useOpenSpaceImport = (options: OpenSpaceImportOptions = {}) => {
   const importToOpenSpace = async (
     url: string,
     type: string,
-    title: string,
     fileName?: string,
     entryPath?: string,
     itemId?: string
@@ -97,6 +100,10 @@ export const useOpenSpaceImport = (options: OpenSpaceImportOptions = {}) => {
       // (and not backfilled) have none, so the zip gets staged locally to find out instead
       const recordedContents =
         extension === '.zip' && fileName ? await fetchBundleContents(fileName) : undefined;
+      const unsafeFile = recordedContents?.find((file) => isUnsafeZipPath(file.path));
+      if (unsafeFile) {
+        throw new Error(`ZIP contains an unsafe path: ${unsafeFile.path}`);
+      }
 
       // Download and unzip into a fresh staging folder. OpenSpace clears ${TEMPORARY} on
       // startup, so staging folders don't pile up. Memoized so the zip is staged at most once
@@ -204,7 +211,7 @@ export const useOpenSpaceImport = (options: OpenSpaceImportOptions = {}) => {
             // warped_projection/warped.json + mesh.obj + mask.png), so unzip into the config root
             plan = await planUnzip(await openspace.absPath('${USER_CONFIG}/'));
           } else if (extension === '.json') {
-            plan = planDownload(await openspace.absPath('${USER_CONFIG}/' + title + '.json')); //need to get name for file from asset page
+            plan = planDownload(await openspace.absPath('${USER_CONFIG}/' + filePath));
           } else {
             throw new Error(`Unsupported config file type: ${extension || filePath}`);
           }

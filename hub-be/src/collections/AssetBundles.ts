@@ -53,6 +53,10 @@ const packageFolders = [
   'webpanels',
 ]
 
+// Imports unzip into the user's OpenSpace folders, so no entry may point outside them
+export const isUnsafeZipPath = (fileName: string) =>
+  /^([a-zA-Z]:|[\\/])/.test(fileName) || fileName.split(/[\\/]/).includes('..')
+
 // Packages are unzipped straight into user/, so every entry must sit in one of its folders.
 // Returns an error message, or undefined if the package is valid
 const checkPackageZip = (zipData: Record<string, Uint8Array>): string | undefined => {
@@ -63,12 +67,6 @@ const checkPackageZip = (zipData: Record<string, Uint8Array>): string | undefine
     .filter((fileName) => !fileName.startsWith('__MACOSX/') && !fileName.endsWith('.DS_Store'))
   if (fileNames.length === 0) {
     return 'Package ZIP is empty'
-  }
-  const unsafe = fileNames.find(
-    (fileName) => /^([a-zA-Z]:)?[\\/]/.test(fileName) || fileName.split(/[\\/]/).includes('..'),
-  )
-  if (unsafe) {
-    return `Package ZIP contains an invalid path: ${unsafe}`
   }
   const folderList = packageFolders.map((folder) => `${folder}/`).join(', ')
   const inUserFolder = (fileName: string) => packageFolders.includes(fileName.split('/')[0])
@@ -234,6 +232,10 @@ export const AssetBundles: CollectionConfig = {
           // Read and unzip once; every check below works on these
           const fileData = new Uint8Array(await file.arrayBuffer())
           const zipData = fileExt === '.zip' ? unzipBundle(fileData) : undefined
+          const unsafePath = zipData && Object.keys(zipData).find(isUnsafeZipPath)
+          if (unsafePath) {
+            return new Response(`ZIP contains an invalid path: ${unsafePath}`, { status: 400 })
+          }
 
           switch (type) {
             case 'recording':

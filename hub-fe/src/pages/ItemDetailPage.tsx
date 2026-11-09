@@ -466,7 +466,6 @@ const ItemDetailPage: React.FC = () => {
                           importToOpenSpace(
                             `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle?.url}`,
                             displayData.type,
-                            displayData.title,
                             displayData.assetBundle?.filename,
                             displayData.assetBundle?.entryPath,
                             item.id
