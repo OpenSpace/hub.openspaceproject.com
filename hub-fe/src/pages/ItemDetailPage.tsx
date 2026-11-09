@@ -119,26 +119,6 @@ const ItemDetailPage: React.FC = () => {
     }
   };
 
-  const handleDownloadAssetBundle = async () => {
-    const url = `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle?.url}`;
-    const filename = displayData.assetBundle?.filename || 'download';
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-      if (item) trackItem(item.id, 'download');
-    } catch (err) {
-      console.error('Failed to download asset bundle:', err);
-    }
-  };
-
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -447,11 +427,19 @@ const ItemDetailPage: React.FC = () => {
                   />
                   <Group mt="xs">
                     <Button
+                      component="a"
+                      href={
+                        displayData.assetBundle?.url
+                          ? `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle.url}`
+                          : undefined
+                      }
+                      download={displayData.assetBundle?.filename || true}
                       variant="light"
                       size="xs"
                       fullWidth
                       leftSection={<IconDownload size={14} />}
-                      onClick={handleDownloadAssetBundle}
+                      disabled={!displayData.assetBundle?.url}
+                      onClick={() => trackItem(item.id, 'download')}
                     >
                       Download
                     </Button>

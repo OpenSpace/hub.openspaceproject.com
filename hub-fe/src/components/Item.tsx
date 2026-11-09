@@ -97,27 +97,6 @@ const Item: React.FC<ItemProps> = ({
   const isFavorited = favorites.some((f) => f.id === payloadUser?.id);
   const totalVersions = (archives?.length || 0) + (currentVersion ? 1 : 0);
 
-  const handleDownloadAssetBundle = async () => {
-    if (!assetBundle?.url) return;
-    const url = `${import.meta.env.VITE_PAYLOAD_API_URL}${assetBundle.url}`;
-    const filename = assetBundle.filename || 'download';
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-      trackItem(id, 'download');
-    } catch (err) {
-      console.error('Failed to download asset bundle:', err);
-    }
-  };
-
   return (
     <Card
       shadow="sm"
@@ -282,11 +261,15 @@ const Item: React.FC<ItemProps> = ({
         )}
 
         <Button
+          component="a"
+          href={assetBundle?.url ? `${import.meta.env.VITE_PAYLOAD_API_URL}${assetBundle.url}` : undefined}
+          download={assetBundle?.filename || true}
           variant="outline"
           size="xs"
           styles={cardButtonStyles}
           leftSection={<IconDownload size={12} />}
-          onClick={handleDownloadAssetBundle}
+          disabled={!assetBundle?.url}
+          onClick={() => trackItem(id, 'download')}
         >
           Download
         </Button>
