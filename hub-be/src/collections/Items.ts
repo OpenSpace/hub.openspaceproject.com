@@ -245,7 +245,6 @@ export const Items: CollectionConfig = {
           data.tags = [...new Set([...(data.tags || []), ...tags])]
         }
 
-        console.log('data after', data)
         return data
       },
     ],
@@ -587,14 +586,7 @@ export const Items: CollectionConfig = {
       path: '/:id/favorite',
       method: 'post',
       handler: withCors(async (req: PayloadRequest) => {
-        // console.log('req')
-        // //get headers
-        // console.log(req.headers)
-
-        // console.log(req.user)
         if (!req.user) {
-          // console.log('no user')
-          // console.log(req)
           return Response.json({ error: 'forbidden' }, { status: 403 })
         }
 
@@ -641,12 +633,10 @@ export const Items: CollectionConfig = {
             // every field changed, spuriously archiving a new version on every click.
             context: { skipItemHooks: true },
           })
-          // console.log('favorites before filter', favorites)
 
           const updatedFavorites = favorites?.filter(
             (item: string | Item) => typeof item === 'string' || item.id !== id,
           )
-          console.log('updatedF avorites afte rftilr ', updatedFavorites)
           await req.payload.update({
             collection: 'users',
             id: req.user.id,

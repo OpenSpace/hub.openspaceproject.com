@@ -186,7 +186,6 @@ export default buildConfig({
           })
 
           if (existingUser.docs.length > 0) {
-            console.log('existingUser', existingUser.docs[0])
             return Response.json(existingUser.docs[0]);
           }
 
@@ -230,7 +229,6 @@ export default buildConfig({
               },
               depth: 0,
             })
-            console.log('existingUserByEmail', updatedUser)
             return Response.json(updatedUser)
           }
           // Create new user with Firebase data. Email/password logins have no name, so fall

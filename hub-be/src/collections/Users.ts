@@ -72,7 +72,6 @@ export const Users: CollectionConfig = {
         name: 'firebase',
         authenticate: async ({ headers, payload }) => {
           const authHeader = headers.get('authorization')
-          // console.log('authHeader', authHeader)
           if (!authHeader?.startsWith('Bearer ')) return { user: null }
 
           const idToken = authHeader.split('Bearer ')[1]
@@ -82,7 +81,6 @@ export const Users: CollectionConfig = {
             const decodedToken = await verifyFirebaseToken(idToken)
 
             const firebaseUID = decodedToken.uid
-            // console.log('firebaseUID', firebaseUID)
             const users = await payload.find({
               collection: 'users',
               where: { firebaseUID: { equals: firebaseUID } },
