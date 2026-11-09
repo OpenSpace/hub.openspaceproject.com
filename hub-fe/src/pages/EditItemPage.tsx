@@ -16,30 +16,17 @@ export function EditItemPage() {
   const { makeRequest } = useAuthenticatedRequest();
   const navigate = useNavigate();
 
-  const { user, payloadUser } = useAuth();
+  const { payloadUser } = useAuth();
+  const userId = payloadUser?.id;
+  const isAdmin = Boolean(payloadUser?.role?.includes('admin'));
   useEffect(() => {
+    if (!id || !userId) {
+      return;
+    }
     const fetchItem = async () => {
       try {
-        // const data = await makeRequest(`/api/items/${id}`);
-        const data = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}/api/items/${id}`);
-        const item = await data.json();
-        setItem(item);
-        setError(null);
-        // Check if user is logged in
-        if (!user || !payloadUser) {
-          notifications.show({
-            title: 'Authentication Required',
-            message: 'You must be logged in to edit items',
-            color: 'red',
-            icon: <IconLock />,
-            autoClose: 5000,
-          });
-          navigate(`/items/${id}`);
-          return;
-        }
-
-        // Check if user is the author of the item
-        if (item.author.id !== payloadUser.id) {
+        const item: Item = await makeRequest(`/api/items/${id}`);
+        if (!isAdmin && item.author?.id !== userId) {
           notifications.show({
             title: 'Permission Denied',
             message: 'You can only edit items that you created',
@@ -50,6 +37,8 @@ export function EditItemPage() {
           navigate(`/items/${id}`);
           return;
         }
+        setItem(item);
+        setError(null);
       } catch (err) {
         console.error('Error fetching item:', err);
         setError('Failed to load item data');
@@ -58,10 +47,8 @@ export function EditItemPage() {
       }
     };
 
-    if (id) {
-      fetchItem();
-    }
-  }, [id, makeRequest]);
+    fetchItem();
+  }, [id, userId, isAdmin, makeRequest, navigate]);
 
   if (loading) {
     return (

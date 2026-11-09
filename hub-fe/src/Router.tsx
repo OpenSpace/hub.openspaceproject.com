@@ -146,7 +146,9 @@ export const router = createBrowserRouter([
     element: (
       <>
         <TopMenuBar />
-        <EditItemPage />
+        <ProtectedRoute>
+          <EditItemPage />
+        </ProtectedRoute>
         <Footer />
       </>
     ),
