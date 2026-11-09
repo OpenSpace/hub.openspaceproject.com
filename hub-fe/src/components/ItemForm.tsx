@@ -18,7 +18,6 @@ import {
   Textarea,
   TextInput,
   Title,
-  useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
@@ -57,6 +56,16 @@ const FileValue = ({ value }: { value: File | File[] | null }) => (
   <UploadLabel>{Array.isArray(value) ? value.map((file) => file.name).join(', ') : value?.name}</UploadLabel>
 );
 
+const fileNoteColor = 'light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-3))';
+
+// Alert colors with a dark background in dark mode; light mode keeps the variant's own colors
+const darkAlertStyles = (border: string) => ({
+  root: {
+    backgroundColor: 'light-dark(var(--alert-bg), var(--mantine-color-dark-7))',
+    borderColor: `light-dark(transparent, ${border})`,
+  },
+});
+
 export function ItemForm({ item, isEdit = false }: ItemFormProps) {
   const navigate = useNavigate();
   const { makeRequest } = useAuthenticatedRequest();
@@ -69,7 +78,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
       ? LOGIN_TO_UPLOAD_MESSAGE
       : undefined;
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
 
   // Tall boxes for the two file pickers, with the placeholder or file name centered
   const dropBoxStyle = {
@@ -428,11 +436,11 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
       radius="md"
       withBorder
       style={{
-        backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
-        borderColor: colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3],
+        backgroundColor: 'var(--hub-color-panel)',
+        borderColor: 'var(--hub-color-panel-border)',
       }}
     >
-      <Title order={2} mb="lg" c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+      <Title order={2} mb="lg" c="var(--hub-color-heading)">
         {isEdit ? 'Edit Item' : 'Upload New Item'}
       </Title>
 
@@ -441,15 +449,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
           icon={<IconAlertCircle size={16} />}
           color="red"
           mb="md"
-          styles={{
-            root: {
-              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : undefined,
-              borderColor: colorScheme === 'dark' ? theme.colors.red[7] : undefined,
-            },
-            message: {
-              color: colorScheme === 'dark' ? theme.white : undefined,
-            },
-          }}
+          styles={darkAlertStyles('var(--mantine-color-red-7)')}
         >
           {error}
         </Alert>
@@ -466,27 +466,15 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
 
       {/* Add version information display */}
       {isEdit && item?.currentVersion && (
-        <Alert
-          color="blue"
-          mb="md"
-          styles={{
-            root: {
-              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : undefined,
-              borderColor: colorScheme === 'dark' ? theme.colors.blue[7] : undefined,
-            },
-            message: {
-              color: colorScheme === 'dark' ? theme.white : undefined,
-            },
-          }}
-        >
+        <Alert color="blue" mb="md" styles={darkAlertStyles('var(--mantine-color-blue-7)')}>
           <Group>
-            <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+            <Text fw={500} c="var(--hub-color-heading)">
               Current Version: {item.currentVersion.version || '1'}
             </Text>
             {item.archives && item.archives.length > 0 && (
               <Text
                 size="sm"
-                c={colorScheme === 'dark' ? theme.colors.gray[0] : theme.colors.dark[5]}
+                c="light-dark(var(--mantine-color-dark-5), var(--mantine-color-gray-0))"
               >
                 Previous versions: {item.archives.length}
               </Text>
@@ -502,11 +490,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
             placeholder="Enter item title"
             required
             maxLength={TITLE_MAX_LENGTH}
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
             {...form.getInputProps('title')}
           />
 
@@ -516,11 +499,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
             minRows={4}
             required
             maxLength={DESCRIPTION_MAX_LENGTH}
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
             {...form.getInputProps('description')}
           />
           <Group>
@@ -531,11 +509,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
               data={typeOptions}
               searchable
               maxDropdownHeight={400}
-              styles={{
-                label: {
-                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-                },
-              }}
               {...form.getInputProps('type')}
               onChange={handleTypeChange}
             />
@@ -546,11 +519,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
               required
               data={licenseOptions}
               searchable
-              styles={{
-                label: {
-                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-                },
-              }}
               {...form.getInputProps('license')}
             />
 
@@ -560,11 +528,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
               required
               data={versionOptions}
               searchable
-              styles={{
-                label: {
-                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-                },
-              }}
               {...form.getInputProps('openspaceVersion')}
             />
           </Group>
@@ -579,21 +542,12 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
                 disabled={Boolean(uploadBlockedReason)}
                 description={uploadBlockedReason}
                 valueComponent={FileValue}
-                styles={{
-                  label: {
-                    color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-                  },
-                  input: dropBoxStyle,
-                }}
+                styles={{ input: dropBoxStyle }}
               />
 
               {imagePreview && (
                 <div>
-                  <Text
-                    size="sm"
-                    mb="xs"
-                    c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-                  >
+                  <Text size="sm" mb="xs" c="var(--hub-color-heading)">
                     Image Preview:
                   </Text>
                   <img
@@ -603,7 +557,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
                       maxWidth: '100%',
                       maxHeight: '200px',
                       objectFit: 'contain',
-                      border: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3]}`,
+                      border: '1px solid var(--hub-color-panel-border)',
                       borderRadius: theme.radius.sm,
                     }}
                   />
@@ -623,28 +577,17 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
                 description={uploadBlockedReason}
                 valueComponent={FileValue}
                 required
-                styles={{
-                  label: {
-                    color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-                  },
-                  input: dropBoxStyle,
-                }}
+                styles={{ input: dropBoxStyle }}
               />
 
               {item?.assetBundle && !assetFile && (
-                <Text
-                  size="sm"
-                  c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[5]}
-                >
+                <Text size="sm" c={fileNoteColor}>
                   Current asset: {item.assetBundle.filename}
                 </Text>
               )}
 
               {assetFile && (
-                <Text
-                  size="sm"
-                  c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[5]}
-                >
+                <Text size="sm" c={fileNoteColor}>
                   Selected file: {assetFile.name}
                 </Text>
               )}
@@ -654,7 +597,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
 
           {/* Always shown; the content follows the selected type */}
             <Stack gap="xs" mt="lg">
-              <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+              <Text fw={500} c="var(--hub-color-heading)">
                 Upload Instructions
               </Text>
               <Card
@@ -662,17 +605,13 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
                 radius={12}
                 withBorder
                 style={{
-                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  backgroundColor: 'var(--hub-color-panel)',
                   borderColor: 'rgba(162, 231, 251, 0.12)',
                 }}
               >
                 <Stack gap="sm">
                   {(fileInstructions?.paragraphs ?? [fallbackInstruction]).map((paragraph) => (
-                    <Text
-                      key={paragraph}
-                      size="sm"
-                      c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
-                    >
+                    <Text key={paragraph} size="sm" c="var(--hub-color-text)">
                       {paragraph}
                     </Text>
                   ))}
@@ -683,7 +622,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
                         fw={600}
                         tt="uppercase"
                         mb={6}
-                        c={colorScheme === 'dark' ? theme.colors.gray[5] : theme.colors.gray[7]}
+                        c="light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-5))"
                       >
                         Example zip file structure
                       </Text>
@@ -703,24 +642,20 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
               onClose={() => setShowVersionConfirm(false)}
               title="Create New Version"
               styles={{
-                title: {
-                  color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-                },
-                content: {
-                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
-                },
+                title: { color: 'var(--hub-color-heading)' },
+                content: { backgroundColor: 'var(--hub-color-panel)' },
               }}
             >
               <Stack>
-                <Text c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}>
+                <Text c="var(--hub-color-text)">
                   The changes you're making will create a new version of this item. The current
                   version will be archived and a new version will be created.
                 </Text>
 
-                <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+                <Text fw={500} c="var(--hub-color-heading)">
                   Current version: {item?.currentVersion?.version || '1'}
                 </Text>
-                <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+                <Text fw={500} c="var(--hub-color-heading)">
                   New version:{' '}
                   {item?.currentVersion
                     ? String(parseInt(item.currentVersion.version || '1') + 1)
@@ -747,7 +682,11 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
             </Modal>
           )}
 
-          <Text size="sm" mt="md" c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[3]}>
+          <Text
+            size="sm"
+            mt="md"
+            c="light-dark(var(--mantine-color-dark-3), var(--mantine-color-gray-4))"
+          >
             By uploading files, you confirm that you have the rights to share them and that you
             have selected the correct license.
           </Text>

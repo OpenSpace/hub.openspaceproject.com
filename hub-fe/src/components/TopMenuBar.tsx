@@ -15,7 +15,6 @@ import {
   Text,
   Tooltip,
   UnstyledButton,
-  useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
 import {
@@ -27,10 +26,17 @@ import { apiUrl } from '../utils/api';
 import { LoginModal } from './LoginModal';
 import OpenSpaceButton from './OpenSpaceButton';
 
+// Avatar placeholder colors: Mantine's `light` variant of blue in dark mode, of dark in light mode
+const avatarStyle = {
+  '--avatar-bg': 'light-dark(var(--mantine-color-dark-light), var(--mantine-color-blue-light))',
+  '--avatar-color':
+    'light-dark(var(--mantine-color-dark-light-color), var(--mantine-color-blue-light-color))',
+};
+const noteColor = 'light-dark(var(--mantine-color-dark-2), var(--mantine-color-gray-3))';
+
 export function TopMenuBar() {
   const { user, payloadUser, logout, uploadsEnabled, signinEnabled } = useAuth();
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
   const navigate = useNavigate();
   const [opened, setOpened] = useState(false);
   const [modalOpened, setModalOpened] = useState(false);
@@ -38,7 +44,6 @@ export function TopMenuBar() {
   const [modalMode, setModalMode] = useState<'login' | 'signup'>('login');
 
   const toggleNavbar = () => setOpened((o) => !o);
-  const isDark = colorScheme === 'dark';
   const openModal = (mode: 'login' | 'signup') => {
     if (!signinEnabled) {
       return;
@@ -100,8 +105,8 @@ export function TopMenuBar() {
     <>
       <div
         style={{
-          backgroundColor: colorScheme === 'dark' ? theme.colors.dark[9] : theme.white,
-          borderBottom: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+          backgroundColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-9))',
+          borderBottom: '1px solid var(--hub-color-border)',
         }}
       >
       <Container
@@ -122,7 +127,7 @@ export function TopMenuBar() {
             to="/"
             fw={700}
             size="xl"
-            c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+            c="var(--hub-color-heading)"
             style={{
               textDecoration: 'underline',
               textDecorationColor: theme.colors.yellow[1],
@@ -174,18 +179,14 @@ export function TopMenuBar() {
                     padding: '4px 8px',
                     borderRadius: theme.radius.sm,
                     backgroundColor:
-                      colorScheme === 'dark' ? theme.colors.dark[9] : theme.colors.gray[0],
+                      'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-9))',
                     transition: 'background-color 150ms ease',
-                    '&:hover': {
-                      backgroundColor:
-                        colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[1],
-                    },
                   }}
                 >
                   <Avatar
                     size="sm"
                     radius="xl"
-                    color={colorScheme === 'dark' ? 'blue' : 'dark'}
+                    style={avatarStyle}
                     src={payloadUser?.thumbnailUrl ? apiUrl(payloadUser.thumbnailUrl) : null}
                   >
                     {displayName().charAt(0).toUpperCase()}
@@ -239,7 +240,7 @@ export function TopMenuBar() {
         <Burger
           opened={opened}
           onClick={toggleNavbar}
-          color={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
+          color="var(--hub-color-heading)"
           size="sm"
           hiddenFrom="md"
         />
@@ -255,20 +256,20 @@ export function TopMenuBar() {
         size="sm"
         styles={{
           title: {
-            color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+            color: 'var(--hub-color-heading)',
             fontSize: rem(20),
             fontWeight: 700,
           },
           header: {
             padding: '16px',
-            borderBottom: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-            backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+            borderBottom: '1px solid var(--hub-color-border)',
+            backgroundColor: 'var(--hub-color-card)',
           },
           content: {
-            backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+            backgroundColor: 'var(--hub-color-card)',
           },
           body: {
-            backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+            backgroundColor: 'var(--hub-color-card)',
           },
         }}
       >
@@ -284,7 +285,7 @@ export function TopMenuBar() {
                   <Avatar
                     size="sm"
                     radius="xl"
-                    color={colorScheme === 'dark' ? 'blue' : 'dark'}
+                    style={avatarStyle}
                     src={payloadUser?.thumbnailUrl ? apiUrl(payloadUser.thumbnailUrl) : null}
                   >
                     {displayName().charAt(0).toUpperCase()}
@@ -319,7 +320,7 @@ export function TopMenuBar() {
                 {item.label}
               </Button>
               {item.disabledReason && (
-                <Text size="xs" mt={4} c={isDark ? theme.colors.gray[3] : theme.colors.dark[2]}>
+                <Text size="xs" mt={4} c={noteColor}>
                   {item.disabledReason}
                 </Text>
               )}
@@ -353,7 +354,7 @@ export function TopMenuBar() {
                 Login
               </Button>
               {!signinEnabled && (
-                <Text size="sm" ta="center" c={isDark ? theme.colors.gray[3] : theme.colors.dark[2]}>
+                <Text size="sm" ta="center" c={noteColor}>
                   {SIGNIN_DISABLED_MESSAGE}
                 </Text>
               )}

@@ -12,14 +12,7 @@ import {
   signInWithPopup,
   TwitterAuthProvider,
 } from 'firebase/auth';
-import {
-  Alert,
-  Button,
-  Modal,
-  Stack,
-  useMantineColorScheme,
-  useMantineTheme,
-} from '@mantine/core';
+import { Alert, Button, Modal, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { auth } from '../firebase/config';
 
@@ -74,9 +67,6 @@ const ignoredErrors = ['auth/popup-closed-by-user', 'auth/cancelled-popup-reques
 
 export function LoginModal({ opened, onClose, mode }: LoginModalProps) {
   const [pendingLink, setPendingLink] = useState<PendingLink | null>(null);
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
-  const isDark = colorScheme === 'dark';
 
   // Start fresh each time the modal opens
   useEffect(() => {
@@ -142,9 +132,12 @@ export function LoginModal({ opened, onClose, mode }: LoginModalProps) {
             icon={<IconLink size={18} />}
             title="You already have an account"
             styles={{
-              root: { backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[1] },
-              title: { color: isDark ? theme.white : theme.colors.dark[7] },
-              message: { color: isDark ? theme.colors.gray[3] : theme.colors.dark[7] },
+              root: {
+                backgroundColor:
+                  'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))',
+              },
+              title: { color: 'var(--hub-color-heading)' },
+              message: { color: 'var(--hub-color-text)' },
             }}
           >
             {pendingLink.email ? `${pendingLink.email} is` : 'This email is'} already registered

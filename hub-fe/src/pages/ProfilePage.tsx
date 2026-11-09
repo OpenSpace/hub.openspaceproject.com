@@ -15,8 +15,6 @@ import {
   Tabs,
   Text,
   Title,
-  useMantineColorScheme,
-  useMantineTheme,
 } from '@mantine/core';
 import { AccountData } from '../components/AccountData';
 import Item from '../components/Item';
@@ -95,8 +93,6 @@ function ProfileContent() {
   const { userId } = useParams();
   const location = useLocation();
   const { user, payloadUser } = useAuth();
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
   const [profileData, setProfileData] = useState<Populated<User, 'thumbnail'> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -202,8 +198,8 @@ function ProfileContent() {
         p="xl"
         radius="md"
         style={{
-          backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
-          color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+          backgroundColor: 'var(--hub-color-card)',
+          color: 'var(--hub-color-heading)',
         }}
       >
         <Group mb="md" justify="space-between">
@@ -216,10 +212,10 @@ function ProfileContent() {
               }
             />
             <div>
-              <Title order={1} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+              <Title order={1} c="var(--hub-color-heading)">
                 {profileData?.username || 'User'}
               </Title>
-              <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+              <Text c="var(--hub-color-dimmed)">
                 {profileData?.email}
               </Text>
             </div>
@@ -240,28 +236,26 @@ function ProfileContent() {
         <Stack gap="md" mt="md">
           {/* Institution */}
           <div>
-            <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+            <Text fw={500} c="var(--hub-color-heading)">
               Institution
             </Text>
-            <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+            <Text c="var(--hub-color-dimmed)">
               {profileData?.institution || 'Not specified'}
             </Text>
           </div>
 
           {/* Link */}
           <div>
-            <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+            <Text fw={500} c="var(--hub-color-heading)">
               Link
             </Text>
-            <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+            <Text c="var(--hub-color-dimmed)">
               {isOwnProfile && payloadUser?.link ? (
                 <a
                   href={toExternalHref(payloadUser.link)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6],
-                  }}
+                  style={{ color: 'var(--mantine-color-anchor)' }}
                 >
                   {payloadUser.link}
                 </a>
@@ -270,9 +264,7 @@ function ProfileContent() {
                   href={toExternalHref(profileData.link)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6],
-                  }}
+                  style={{ color: 'var(--mantine-color-anchor)' }}
                 >
                   {profileData.link}
                 </a>
@@ -284,20 +276,20 @@ function ProfileContent() {
 
           {/* Slack Handle */}
           <div>
-            <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+            <Text fw={500} c="var(--hub-color-heading)">
               Slack Handle
             </Text>
-            <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+            <Text c="var(--hub-color-dimmed)">
               {profileData?.slackHandle || 'Not specified'}
             </Text>
           </div>
 
           {/* Name */}
           <div>
-            <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+            <Text fw={500} c="var(--hub-color-heading)">
               Name
             </Text>
-            <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+            <Text c="var(--hub-color-dimmed)">
               {profileData?.name || 'Not specified'}
             </Text>
           </div>
@@ -305,10 +297,10 @@ function ProfileContent() {
           {/* Email: only returned on your own profile (or to admins) */}
           {profileData?.email && (
             <div>
-              <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+              <Text fw={500} c="var(--hub-color-heading)">
                 Email
               </Text>
-              <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+              <Text c="var(--hub-color-dimmed)">
                 {profileData.email}
               </Text>
             </div>
@@ -317,15 +309,13 @@ function ProfileContent() {
           {/* Contact email: the API only returns it to logged-in users, so bots can't collect it */}
           {user && profileData?.contactEmail && (
             <div>
-              <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+              <Text fw={500} c="var(--hub-color-heading)">
                 Contact Email
               </Text>
-              <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+              <Text c="var(--hub-color-dimmed)">
                 <a
                   href={`mailto:${profileData.contactEmail}`}
-                  style={{
-                    color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6],
-                  }}
+                  style={{ color: 'var(--mantine-color-anchor)' }}
                 >
                   {profileData.contactEmail}
                 </a>
@@ -335,10 +325,10 @@ function ProfileContent() {
 
           {/* Member Since */}
           <div>
-            <Text fw={500} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+            <Text fw={500} c="var(--hub-color-heading)">
               Member Since
             </Text>
-            <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+            <Text c="var(--hub-color-dimmed)">
               {new Date(profileData?.createdAt || '').toLocaleDateString()}
             </Text>
           </div>
@@ -355,12 +345,8 @@ function ProfileContent() {
           title="Edit Profile"
           size="lg"
           styles={{
-            title: {
-              color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-            },
-            content: {
-              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
-            },
+            title: { color: 'var(--hub-color-heading)' },
+            content: { backgroundColor: 'var(--hub-color-panel)' },
           }}
         >
           {profileData && <UserProfileForm user={profileData} />}
@@ -370,14 +356,9 @@ function ProfileContent() {
           defaultValue="items"
           color="#d0f884"
           mt="xl"
-          styles={(theme) => ({
-            tab: {
-              color: colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[4],
-              '&[data-active]': {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            },
-          })}
+          styles={{
+            tab: { color: 'light-dark(var(--mantine-color-dark-4), var(--mantine-color-gray-4))' },
+          }}
         >
           <Tabs.List>
             <Tabs.Tab value="items">{isOwnProfile ? 'My Items' : 'User Items'}</Tabs.Tab>

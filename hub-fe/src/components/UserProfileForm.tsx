@@ -10,7 +10,6 @@ import {
   Text,
   TextInput,
   Title,
-  useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
@@ -35,7 +34,6 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
   const { makeRequest } = useAuthenticatedRequest();
   const { user: firebaseUser } = useAuth();
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
@@ -209,11 +207,11 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       radius="md"
       withBorder
       style={{
-        backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
-        borderColor: colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3],
+        backgroundColor: 'var(--hub-color-panel)',
+        borderColor: 'var(--hub-color-panel-border)',
       }}
     >
-      <Title order={2} mb="lg" c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+      <Title order={2} mb="lg" c="var(--hub-color-heading)">
         Edit Profile
       </Title>
 
@@ -230,11 +228,6 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             placeholder="Enter your username"
             required
             maxLength={USERNAME_MAX_LENGTH}
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
             {...form.getInputProps('username')}
           />
 
@@ -242,22 +235,12 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             label="Institution"
             placeholder="Enter your institution"
             required
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
             {...form.getInputProps('institution')}
           />
 
           <TextInput
             label="Slack Handle"
             placeholder="Enter your Slack handle"
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
             {...form.getInputProps('slackHandle')}
           />
 
@@ -265,11 +248,6 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             label="Link"
             placeholder="https://example.com (optional)"
             maxLength={LINK_MAX_LENGTH}
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
             {...form.getInputProps('link')}
           />
 
@@ -278,11 +256,6 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             description="Optional. This email will only be shown to other logged-in hub users."
             placeholder="Enter an email people can reach you at"
             type="email"
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
             {...form.getInputProps('contactEmail')}
           />
 
@@ -292,20 +265,11 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             accept="image/*"
             onChange={handleImageChange}
             leftSection={<IconUpload size={16} />}
-            styles={{
-              label: {
-                color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
-              },
-            }}
           />
 
           {imagePreview && (
             <div>
-              <Text
-                size="sm"
-                mb="xs"
-                c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-              >
+              <Text size="sm" mb="xs" c="var(--hub-color-heading)">
                 Image Preview:
               </Text>
               <img
@@ -315,7 +279,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
                   maxWidth: '100%',
                   maxHeight: '200px',
                   objectFit: 'contain',
-                  border: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3]}`,
+                  border: '1px solid var(--hub-color-panel-border)',
                   borderRadius: theme.radius.sm,
                 }}
               />

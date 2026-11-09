@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IconCheck, IconPlug, IconX } from '@tabler/icons-react';
 import openspaceApi from 'openspace-api-js';
-import { Button, useMantineColorScheme, useMantineTheme } from '@mantine/core';
+import { Button } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
 interface OpenSpaceButtonProps {
@@ -11,8 +11,6 @@ interface OpenSpaceButtonProps {
 
 const OpenSpaceButton: React.FC<OpenSpaceButtonProps> = ({ inMenu = false }) => {
   const [isConnected, setIsConnected] = useState(false);
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
 
   async function connectToOpenSpace() {
     // setup the api params
@@ -80,6 +78,7 @@ const OpenSpaceButton: React.FC<OpenSpaceButtonProps> = ({ inMenu = false }) => 
   return (
     <>
       {isConnected ? (
+        // Disabled buttons already get --mantine-color-disabled (dark-6 in dark mode)
         <Button
           disabled
           variant="light"
@@ -87,14 +86,6 @@ const OpenSpaceButton: React.FC<OpenSpaceButtonProps> = ({ inMenu = false }) => 
           leftSection={<IconPlug size={16} />}
           visibleFrom={inMenu ? undefined : 'md'}
           fullWidth={inMenu}
-          styles={{
-            root: {
-              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[6] : undefined,
-              '&:hover': {
-                backgroundColor: colorScheme === 'dark' ? theme.colors.dark[5] : undefined,
-              },
-            },
-          }}
         >
           Connected
         </Button>
@@ -106,14 +97,7 @@ const OpenSpaceButton: React.FC<OpenSpaceButtonProps> = ({ inMenu = false }) => 
           leftSection={<IconPlug size={16} />}
           visibleFrom={inMenu ? undefined : 'md'}
           fullWidth={inMenu}
-          styles={{
-            root: {
-              backgroundColor: colorScheme === 'dark' ? theme.colors.dark[6] : undefined,
-              '&:hover': {
-                backgroundColor: colorScheme === 'dark' ? theme.colors.dark[5] : undefined,
-              },
-            },
-          }}
+          style={{ '--button-bg': 'light-dark(transparent, var(--mantine-color-dark-6))' }}
         >
           Connect to OpenSpace
         </Button>

@@ -1,16 +1,13 @@
-import { List, Stack, Text, useMantineColorScheme, useMantineTheme } from '@mantine/core';
+import { List, Stack, Text } from '@mantine/core';
 
 // How many files to list before summarizing the rest
 const MAX_LISTED_FILES = 10;
 
+const textColor = 'var(--hub-color-text)';
+const mutedColor = 'light-dark(var(--mantine-color-dark-2), var(--mantine-color-gray-5))';
+
 // Body of the "overwrite existing files?" confirmation shown before an OpenSpace import
 export function OverwriteFilesList({ files }: { files: string[] }) {
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
-  const isDark = colorScheme === 'dark';
-  const textColor = isDark ? theme.colors.gray[3] : theme.colors.dark[7];
-  const mutedColor = isDark ? theme.colors.gray[5] : theme.colors.dark[2];
-
   return (
     <Stack gap="xs">
       <Text size="sm" c={textColor}>

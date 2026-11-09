@@ -19,7 +19,6 @@ import {
   Stack,
   Text,
   Tooltip,
-  useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,7 +76,6 @@ const Item: React.FC<ItemProps> = ({
   assetBundle,
 }) => {
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
   const [favorites, setFavorites] = useState<UserRef[]>(favoritedBy || []);
   const [isHovered, setIsHovered] = useState(false);
   const { makeRequest } = useAuthenticatedRequest();
@@ -111,8 +109,8 @@ const Item: React.FC<ItemProps> = ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
-        color: colorScheme === 'dark' ? theme.white : theme.colors.dark[7],
+        backgroundColor: 'var(--hub-color-card)',
+        color: 'var(--hub-color-heading)',
         border: '1px solid rgba(162, 231, 251, 0.12)',
       }}
     >
@@ -169,10 +167,10 @@ const Item: React.FC<ItemProps> = ({
                   position: 'absolute',
                   bottom: -4,
                   right: -4,
-                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+                  backgroundColor: 'var(--hub-color-card)',
                   padding: '2px 4px',
                   borderRadius: '10px',
-                  border: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+                  border: '1px solid var(--hub-color-border)',
                   minWidth: '16px',
                   textAlign: 'center',
                   lineHeight: 1,
@@ -206,7 +204,7 @@ const Item: React.FC<ItemProps> = ({
         <div style={{ height: '2em', display: 'flex', alignItems: 'center' }}>
         <Text
           size="xs"
-          c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.gray[7]}
+          c="light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4))"
           lineClamp={2}
         >
           {linkify(description)}
@@ -215,11 +213,9 @@ const Item: React.FC<ItemProps> = ({
         
 
         <Group gap="xs" wrap="wrap">
-          <Text size="xs" c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[3]}>
+          <Text size="xs" c="light-dark(var(--mantine-color-dark-3), var(--mantine-color-gray-4))">
             <span style={{ fontWeight: 500 }}>Author:</span>{' '}
-            <Anchor component={Link} to={`/profile/${author.id}`} size="xs" style={{
-                    color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6]
-                  }}>
+            <Anchor component={Link} to={`/profile/${author.id}`} size="xs">
               {author.username}
             </Anchor>
           </Text>
@@ -278,7 +274,7 @@ const Item: React.FC<ItemProps> = ({
         </Button>
         </Group>
 
-        <Anchor component={Link} to={`/items/${id}`} size="xs" style={{ marginLeft: 'auto',  color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6]}}>
+        <Anchor component={Link} to={`/items/${id}`} size="xs" style={{ marginLeft: 'auto' }}>
           Details
         </Anchor>
       </Group>

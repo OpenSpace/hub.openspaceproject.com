@@ -12,8 +12,6 @@ import {
   Stack,
   Text,
   TextInput,
-  useMantineColorScheme,
-  useMantineTheme,
 } from '@mantine/core';
 import { SORT_OPTIONS, TagFacet } from '@/hooks/useItems';
 import { TagRef } from '@/types/items';
@@ -61,8 +59,6 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
   onTagRemove,
 }) => {
   const [showTags, setShowTags] = useState(false);
-  const colorScheme = useMantineColorScheme();
-  const theme = useMantineTheme();
 
   // Tags across every item matching the current filters (from the API, not just this page),
   // minus the ones already selected, grouped by type in a fixed order
@@ -135,11 +131,7 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
         <Stack gap="xs">
           {tagGroups.map((group) => (
             <Group key={group.group} gap="xs" wrap="wrap">
-              <Text
-                size="sm"
-                fw={500}
-                c={colorScheme.colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-              >
+              <Text size="sm" fw={500} c="var(--hub-color-heading)">
                 {getTagLabel(group.group as TagRef['type'])}:
               </Text>
               {group.tags.map((tag) => (
@@ -156,10 +148,7 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
             </Group>
           ))}
           {tagGroups.length === 0 && (
-            <Text
-              size="sm"
-              c={colorScheme.colorScheme === 'dark' ? theme.colors.gray[5] : theme.colors.dark[2]}
-            >
+            <Text size="sm" c="light-dark(var(--mantine-color-dark-2), var(--mantine-color-gray-5))">
               No more tags to filter by
             </Text>
           )}
@@ -173,9 +162,7 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
       ) : !propItems?.length ? (
         propLoading ? (
           <Center>
-            <Loader
-              color={colorScheme.colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-            />
+            <Loader color="var(--hub-color-heading)" />
           </Center>
         ) : (
           <Alert color="blue" title="No Items Found" variant="light">

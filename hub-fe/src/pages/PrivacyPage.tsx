@@ -1,25 +1,11 @@
 import { Link } from 'react-router-dom';
-import {
-  Anchor,
-  Container,
-  List,
-  Stack,
-  Text,
-  Title,
-  useMantineColorScheme,
-  useMantineTheme,
-} from '@mantine/core';
+import { Anchor, Container, List, Stack, Text, Title } from '@mantine/core';
 
 const PRIVACY_CONTACT_EMAIL = 'support@openspaceproject.com';
+const headingColor = 'var(--hub-color-heading)';
+const textColor = 'var(--hub-color-dimmed)';
 
 export function PrivacyPage() {
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
-  const headingColor = colorScheme === 'dark' ? theme.white : theme.colors.dark[7];
-  const textColor = colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2];
-  // Same blue as the links on the item cards
-  const linkColor = colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6];
-
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <Stack gap="xs">
       <Title order={3} c={headingColor}>
@@ -89,7 +75,7 @@ export function PrivacyPage() {
 
         <Section title="Managing your data">
           From{' '}
-          <Anchor component={Link} to="/profile/me" style={{ color: linkColor }}>
+          <Anchor component={Link} to="/profile/me">
             your profile
           </Anchor>{' '}
           you can:
@@ -116,7 +102,7 @@ export function PrivacyPage() {
 
         <Section title="Contact">
           For questions or requests about your data, email{' '}
-          <Anchor style={{ color: linkColor }} href={`mailto:${PRIVACY_CONTACT_EMAIL}`}>{PRIVACY_CONTACT_EMAIL}</Anchor>.
+          <Anchor href={`mailto:${PRIVACY_CONTACT_EMAIL}`}>{PRIVACY_CONTACT_EMAIL}</Anchor>.
         </Section>
       </Stack>
     </Container>

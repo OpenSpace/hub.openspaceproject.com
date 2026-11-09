@@ -9,8 +9,6 @@ import {
   Paper,
   Stack,
   Text,
-  useMantineColorScheme,
-  useMantineTheme,
 } from '@mantine/core';
 
 interface ItemDetailProps {
@@ -21,19 +19,16 @@ interface ItemDetailProps {
 }
 
 function ItemDetail({ label, value, isBold = true, link }: ItemDetailProps) {
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
-
   return (
     <Stack align="center" justify="center" gap="xs">
       <Text
         fw={isBold ? 700 : 500}
         size="sm"
-        c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[1]}
+        c="light-dark(var(--mantine-color-dark-1), var(--mantine-color-gray-3))"
       >
         {label}
       </Text>
-      <Text size="xs" c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[6]}>
+      <Text size="xs" c="light-dark(var(--mantine-color-dark-6), var(--mantine-color-gray-4))">
         {link ? <Link to={link}>{value}</Link> : value}
       </Text>
     </Stack>

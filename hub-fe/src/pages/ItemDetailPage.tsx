@@ -27,7 +27,6 @@ import {
   Text,
   Title,
   Tooltip,
-  useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
 import { BundleContents } from '@/components/BundleContents';
@@ -49,7 +48,6 @@ const ItemDetailPage: React.FC = () => {
   const { makeRequest } = useAuthenticatedRequest();
   const { payloadUser, user, showFavoriteCounts, showDownloadCounts, allowImport } = useAuth();
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,10 +116,10 @@ const ItemDetailPage: React.FC = () => {
     return (
       <Container size="xl" py="xl">
         <Stack align="center" gap="sm">
-          <Title order={3} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+          <Title order={3} c="var(--hub-color-heading)">
             Item unavailable
           </Title>
-          <Text c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+          <Text c="var(--hub-color-dimmed)">
             {error || 'Item not found'}
           </Text>
           <Button component={Link} to="/items" mt="sm">
@@ -161,7 +159,7 @@ const ItemDetailPage: React.FC = () => {
                 withBorder
                 radius={12}
                 style={{
-                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  backgroundColor: 'var(--hub-color-panel)',
                   borderColor: 'rgba(162, 231, 251, 0.12)',
                 }}
               >
@@ -213,11 +211,10 @@ const ItemDetailPage: React.FC = () => {
                             position: 'absolute',
                             bottom: -4,
                             right: -4,
-                            backgroundColor:
-                              colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                            backgroundColor: 'var(--hub-color-panel)',
                             padding: '2px 4px',
                             borderRadius: '10px',
-                            border: `1px solid ${colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[3]}`,
+                            border: '1px solid var(--hub-color-panel-border)',
                             minWidth: '16px',
                             textAlign: 'center',
                             lineHeight: 1,
@@ -237,13 +234,13 @@ const ItemDetailPage: React.FC = () => {
                 p="md"
                 radius={12}
                 style={{
-                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  backgroundColor: 'var(--hub-color-panel)',
                   borderColor: 'rgba(162, 231, 251, 0.12)',
                 }}
               >
                 <Text
                   size="sm"
-                  c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[2]}
+                  c="light-dark(var(--mantine-color-dark-2), var(--mantine-color-gray-3))"
                 >
                   {linkify(displayData.description ?? '')}
                 </Text>
@@ -263,17 +260,13 @@ const ItemDetailPage: React.FC = () => {
                 p="xs"
                 radius={12}
                 style={{
-                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  backgroundColor: 'var(--hub-color-panel)',
                   borderColor: 'rgba(162, 231, 251, 0.12)',
                 }}
               >
                 <Stack gap="xs">
                   <Stack gap={2}>
-                    <Text
-                      size="xs"
-                      fw={500}
-                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-                    >
+                    <Text size="xs" fw={500} c="var(--hub-color-heading)">
                       Author
                     </Text>
                     <Anchor
@@ -281,18 +274,13 @@ const ItemDetailPage: React.FC = () => {
                       to={`/profile/${item.author.id}`}
                       size="xs"
                       underline="always"
-                      style={{color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6]}}
                     >
                       {item.author.username}
                     </Anchor>
                   </Stack>
                   <Divider size="xs" />
                   <Stack gap={2}>
-                    <Text
-                      size="xs"
-                      fw={500}
-                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-                    >
+                    <Text size="xs" fw={500} c="var(--hub-color-heading)">
                       License
                     </Text>
                     {getLicenseUrl(displayData.license) ? (
@@ -301,48 +289,30 @@ const ItemDetailPage: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         size="xs"
-                        style={{color: colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6]}}
                       >
                         {displayData.license}
                       </Anchor>
                     ) : (
-                      <Text
-                        size="xs"
-                        c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
-                      >
+                      <Text size="xs" c="var(--hub-color-text)">
                         {displayData.license}
                       </Text>
                     )}
                   </Stack>
                   <Divider size="xs" />
                   <Stack gap={2}>
-                    <Text
-                      size="xs"
-                      fw={500}
-                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-                    >
+                    <Text size="xs" fw={500} c="var(--hub-color-heading)">
                       OpenSpace Version
                     </Text>
-                    <Text
-                      size="xs"
-                      c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
-                    >
+                    <Text size="xs" c="var(--hub-color-text)">
                       {displayData.openspaceVersion}
                     </Text>
                   </Stack>
                   <Divider size="xs" />
                   <Stack gap={2}>
-                    <Text
-                      size="xs"
-                      fw={500}
-                      c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-                    >
+                    <Text size="xs" fw={500} c="var(--hub-color-heading)">
                       Last Update
                     </Text>
-                    <Text
-                      size="xs"
-                      c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
-                    >
+                    <Text size="xs" c="var(--hub-color-text)">
                       {new Date(selectedVersion?.createdAt || item.updatedAt).toLocaleDateString()}
                     </Text>
                   </Stack>
@@ -350,17 +320,10 @@ const ItemDetailPage: React.FC = () => {
                     <>
                       <Divider size="xs" />
                       <Stack gap={2}>
-                        <Text
-                          size="xs"
-                          fw={500}
-                          c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-                        >
+                        <Text size="xs" fw={500} c="var(--hub-color-heading)">
                           Downloads
                         </Text>
-                        <Text
-                          size="xs"
-                          c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7]}
-                        >
+                        <Text size="xs" c="var(--hub-color-text)">
                           {/* Downloads and imports are counted separately but shown as one number */}
                           {((item.downloadCount ?? 0) + (item.importCount ?? 0)).toLocaleString()}
                         </Text>
@@ -375,16 +338,12 @@ const ItemDetailPage: React.FC = () => {
                 p="xs"
                 radius={12}
                 style={{
-                  backgroundColor: colorScheme === 'dark' ? theme.colors.dark[8] : theme.white,
+                  backgroundColor: 'var(--hub-color-panel)',
                   borderColor: 'rgba(162, 231, 251, 0.12)',
                 }}
               >
                 <Stack gap="xs">
-                  <Text
-                    size="xs"
-                    fw={500}
-                    c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}
-                  >
+                  <Text size="xs" fw={500} c="var(--hub-color-heading)">
                     Version
                   </Text>
                   <Select

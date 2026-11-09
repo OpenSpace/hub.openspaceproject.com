@@ -10,8 +10,6 @@ import {
   Text,
   TextInput,
   Title,
-  useMantineColorScheme,
-  useMantineTheme,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,13 +27,10 @@ export function AccountData({ user, itemCount }: AccountDataProps) {
   const { makeRequest } = useAuthenticatedRequest();
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
   const [exporting, setExporting] = useState(false);
   const [deleteOpened, setDeleteOpened] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const linkColor = colorScheme === 'dark' ? theme.colors.blue[4] : theme.colors.blue[6];
 
   const handleExport = async () => {
     try {
@@ -88,12 +83,12 @@ export function AccountData({ user, itemCount }: AccountDataProps) {
 
   return (
     <Stack gap="xs" mt="xl">
-      <Title order={4} c={colorScheme === 'dark' ? theme.white : theme.colors.dark[7]}>
+      <Title order={4} c="var(--hub-color-heading)">
         Your data
       </Title>
-      <Text size="sm" c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.dark[2]}>
+      <Text size="sm" c="var(--hub-color-dimmed)">
         Download a copy of your profile and items, or delete your account. See the{' '}
-        <Anchor style={{ color: linkColor }} component={Link} to="/privacy" size="sm">
+        <Anchor component={Link} to="/privacy" size="sm">
           privacy policy
         </Anchor>{' '}
         for what the Hub stores.

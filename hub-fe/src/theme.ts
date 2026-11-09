@@ -188,6 +188,7 @@ export const theme: MantineThemeOverride = {
       },
       // Flat light-dark() values that follow the color scheme (see Card above)
       styles: {
+        label: { color: 'var(--hub-color-heading)' },
         input: {
           backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))',
           borderColor: 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
@@ -202,6 +203,7 @@ export const theme: MantineThemeOverride = {
       },
       // Flat light-dark() values that follow the color scheme (see Card above)
       styles: {
+        label: { color: 'var(--hub-color-heading)' },
         input: {
           backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))',
           borderColor: 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
@@ -233,10 +235,16 @@ export const theme: MantineThemeOverride = {
       defaultProps: {
         radius: 'sm',
       },
+      styles: {
+        label: { color: 'var(--hub-color-heading)' },
+      },
     },
     FileInput: {
       defaultProps: {
         radius: 'sm',
+      },
+      styles: {
+        label: { color: 'var(--hub-color-heading)' },
       },
     },
   },
@@ -335,14 +343,34 @@ export const theme: MantineThemeOverride = {
   },
 };
 
+// The --hub-color-* variables are the hub's shared palette; use them instead of picking
+// colors by color scheme in components
 export const cssVariablesResolver: CSSVariablesResolver = (mantineTheme) => {
   const base = defaultCssVariablesResolver(mantineTheme);
   return {
     ...base,
+    light: {
+      ...base.light,
+      '--mantine-color-anchor': 'var(--mantine-color-blue-6)',
+      '--hub-color-heading': 'var(--mantine-color-dark-7)',
+      '--hub-color-text': 'var(--mantine-color-dark-7)',
+      '--hub-color-dimmed': 'var(--mantine-color-dark-2)',
+      '--hub-color-panel': 'var(--mantine-color-white)',
+      '--hub-color-card': 'var(--mantine-color-white)',
+      '--hub-color-border': 'var(--mantine-color-gray-3)',
+      '--hub-color-panel-border': 'var(--mantine-color-gray-3)',
+    },
     dark: {
       ...base.dark,
       '--mantine-color-body': 'var(--mantine-color-dark-9)',
-      '--mantine-color-anchor': 'var(--mantine-color-blue-5)',
+      '--mantine-color-anchor': 'var(--mantine-color-blue-4)',
+      '--hub-color-heading': 'var(--mantine-color-white)',
+      '--hub-color-text': 'var(--mantine-color-gray-3)',
+      '--hub-color-dimmed': 'var(--mantine-color-gray-4)',
+      '--hub-color-panel': 'var(--mantine-color-dark-8)',
+      '--hub-color-card': 'var(--mantine-color-dark-7)',
+      '--hub-color-border': 'var(--mantine-color-dark-4)',
+      '--hub-color-panel-border': 'var(--mantine-color-dark-6)',
     },
   };
 };

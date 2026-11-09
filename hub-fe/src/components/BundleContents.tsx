@@ -8,10 +8,10 @@ import {
   Text,
   Tree,
   TreeNodeData,
-  useMantineColorScheme,
-  useMantineTheme,
 } from '@mantine/core';
 import { BundleFile, fetchBundleContents } from '@/utils/bundleContents';
+
+const mutedColor = 'light-dark(var(--mantine-color-dark-2), var(--mantine-color-gray-5))';
 
 const formatBytes = (bytes: number) => {
   const units = ['B', 'KB', 'MB', 'GB'];
@@ -70,8 +70,6 @@ export function BundleContents({
   filename?: string | null;
   filesize?: number | null;
 }) {
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
   const [files, setFiles] = useState<BundleFile[] | undefined>();
 
   useEffect(() => {
@@ -104,9 +102,6 @@ export function BundleContents({
   }
 
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-  const isDark = colorScheme === 'dark';
-  const textColor = isDark ? theme.colors.gray[3] : theme.colors.dark[7];
-  const mutedColor = isDark ? theme.colors.gray[5] : theme.colors.dark[2];
 
   return (
     <Card
@@ -114,12 +109,12 @@ export function BundleContents({
       p="md"
       radius={12}
       style={{
-        backgroundColor: isDark ? theme.colors.dark[8] : theme.white,
+        backgroundColor: 'var(--hub-color-panel)',
         borderColor: 'rgba(162, 231, 251, 0.12)',
       }}
     >
       <Group justify="space-between" mb="xs">
-        <Text size="sm" fw={500} c={isDark ? theme.white : theme.colors.dark[7]}>
+        <Text size="sm" fw={500} c="var(--hub-color-heading)">
           Files
         </Text>
         <Text size="xs" c={mutedColor}>
@@ -132,21 +127,25 @@ export function BundleContents({
           levelOffset="md"
           renderNode={({ node, expanded, hasChildren, elementProps }) => (
             <Group gap={6} wrap="nowrap" py={2} {...elementProps}>
+              {/* Icons draw in currentColor: SVG attributes can't take light-dark() */}
               {hasChildren ? (
                 <IconChevronDown
                   size={12}
-                  color={mutedColor}
-                  style={{ transform: expanded ? undefined : 'rotate(-90deg)', flexShrink: 0 }}
+                  style={{
+                    color: mutedColor,
+                    transform: expanded ? undefined : 'rotate(-90deg)',
+                    flexShrink: 0,
+                  }}
                 />
               ) : (
                 <Box w={12} style={{ flexShrink: 0 }} />
               )}
               {hasChildren ? (
-                <IconFolder size={14} color={mutedColor} style={{ flexShrink: 0 }} />
+                <IconFolder size={14} style={{ color: mutedColor, flexShrink: 0 }} />
               ) : (
-                <IconFile size={14} color={mutedColor} style={{ flexShrink: 0 }} />
+                <IconFile size={14} style={{ color: mutedColor, flexShrink: 0 }} />
               )}
-              <Text size="xs" c={textColor} truncate style={{ flex: 1 }}>
+              <Text size="xs" c="var(--hub-color-text)" truncate style={{ flex: 1 }}>
                 {node.label}
               </Text>
               <Text size="xs" c={mutedColor} style={{ flexShrink: 0 }}>
