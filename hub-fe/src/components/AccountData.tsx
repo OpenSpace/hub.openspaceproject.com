@@ -85,7 +85,7 @@ export function AccountData({ user }: AccountDataProps) {
     }
   };
 
-  const itemCount = user.items?.length ?? 0;
+  const itemCount = user.items?.docs.length ?? 0;
 
   return (
     <Stack gap="xs" mt="xl">

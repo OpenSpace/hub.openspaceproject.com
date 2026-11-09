@@ -16,7 +16,7 @@ export const validateOpenspaceVersion: Validate<string | null | undefined> = asy
     return required ? 'This field is required.' : true
   }
 
-  const siteConfig = await req.payload.findGlobal({ slug: 'site-config' })
+  const siteConfig = await req.payload.findGlobal({ slug: 'site-config', req })
   const config = siteConfig?.config as { versions?: string[] } | undefined
   const versions: string[] = config?.versions || []
 

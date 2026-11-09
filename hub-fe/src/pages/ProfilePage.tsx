@@ -97,15 +97,9 @@ function ProfileContent() {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const userData = await response.json();
+        const userData: User = await response.json();
         setProfileData(userData);
-
-        // Items the viewer can't read (e.g. another author's drafts) stay as bare ids, so skip them
-        if (userData.items && userData.items.length > 0) {
-          setItemsData(
-            userData.items.filter((item: string | ItemType): item is ItemType => typeof item !== 'string')
-          );
-        }
+        setItemsData(userData.items?.docs ?? []);
 
         setError(null);
         fetchedRef.current = targetUserId;
@@ -153,6 +147,8 @@ function ProfileContent() {
       </Container>
     );
   }
+
+  const favorites = profileData?.favorites?.docs ?? [];
 
   if (error) {
     return (
@@ -415,13 +411,9 @@ function ProfileContent() {
 
           <Tabs.Panel value="favorites" pt="xl">
             <Grid>
-              {profileData?.favorites && profileData.favorites.length > 0 ? (
+              {favorites.length > 0 ? (
                 <>
-                  {paginateFavorites(
-                    profileData.favorites.filter(
-                      (item): item is ItemType => typeof item !== 'string'
-                    )
-                  ).map((item) => (
+                  {paginateFavorites(favorites).map((item) => (
                     <Grid.Col key={item.id} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
                       <Item
                         id={item.id}
@@ -453,11 +445,11 @@ function ProfileContent() {
                       />
                     </Grid.Col>
                   ))}
-                  {Math.ceil(profileData.favorites.length / itemsPerPage) > 1 && (
+                  {Math.ceil(favorites.length / itemsPerPage) > 1 && (
                     <Grid.Col span={12}>
                       <Group justify="center" mt="md">
                         <Pagination
-                          total={Math.ceil(profileData.favorites.length / itemsPerPage)}
+                          total={Math.ceil(favorites.length / itemsPerPage)}
                           value={currentFavoritesPage}
                           onChange={setCurrentFavoritesPage}
                           color="blue"

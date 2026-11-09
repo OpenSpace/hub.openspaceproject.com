@@ -9,8 +9,9 @@ export interface User {
   contactEmail?: string | null;
   institution: string;
   slackHandle?: string | null;
-  items?: Item[] | null;
-  favorites?: Item[] | null;
+  // Only the items the viewer may see
+  items?: { docs: Item[] } | null;
+  favorites?: { docs: Item[] } | null;
   updatedAt: Date;
   createdAt: Date;
   email: string;

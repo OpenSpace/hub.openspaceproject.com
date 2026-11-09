@@ -7,7 +7,6 @@ import {
   readPublishedOrOwn,
   requireOwnUploads,
 } from '@/Access'
-import { Item, User } from '@/payload-types'
 import { normalizeOpenspaceVersion, validateOpenspaceVersion } from '@/validation/openspaceVersion'
 import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/validation/textFields'
 import { withCors } from '@/withCors'
@@ -85,7 +84,8 @@ export const Items: CollectionConfig = {
           if (originalDoc?.currentVersion) {
             const versionDoc = await req.payload.findByID({
               collection: 'versions',
-              id: originalDoc.currentVersion
+              id: originalDoc.currentVersion,
+              req,
             })
             if (versionDoc) {
               currentVersionNumber = versionDoc.version
@@ -113,6 +113,7 @@ export const Items: CollectionConfig = {
                 },
                 changedFields: [],
               },
+              req,
             })
 
             // Update originalDoc with the new version reference
@@ -147,6 +148,7 @@ export const Items: CollectionConfig = {
                 },
                 changedFields: getChangedFields(originalDoc, data),
               },
+              req,
             })
 
             // Update item with new version references
@@ -174,6 +176,7 @@ export const Items: CollectionConfig = {
                   assetBundle: data.assetBundle,
                 },
               },
+              req,
             })
           }
         }
@@ -190,6 +193,7 @@ export const Items: CollectionConfig = {
                 type: { equals: 'openspaceVersion' },
                 name: { equals: data.openspaceVersion },
               },
+              req,
             })
             if (versionTag.docs.length > 0) {
               tags.push(versionTag.docs[0].id)
@@ -200,6 +204,7 @@ export const Items: CollectionConfig = {
               const createdVersionTag = await req.payload.create({
                 collection: 'tags',
                 data: { name: data.openspaceVersion, type: 'openspaceVersion' },
+                req,
               })
               tags.push(createdVersionTag.id)
             }
@@ -213,6 +218,7 @@ export const Items: CollectionConfig = {
                 type: { equals: 'license' },
                 name: { equals: data.license },
               },
+              req,
             })
             if (licenseTag.docs.length > 0) {
               tags.push(licenseTag.docs[0].id)
@@ -227,6 +233,7 @@ export const Items: CollectionConfig = {
                 type: { equals: 'itemType' },
                 name: { equals: data.type },
               },
+              req,
             })
             if (typeTag.docs.length > 0) {
               tags.push(typeTag.docs[0].id)
@@ -237,6 +244,7 @@ export const Items: CollectionConfig = {
               const createdTypeTag = await req.payload.create({
                 collection: 'tags',
                 data: { name: data.type, type: 'itemType' },
+                req,
               })
               tags.push(createdTypeTag.id)
             }
@@ -266,23 +274,6 @@ export const Items: CollectionConfig = {
     afterChange: [
       async ({ req, doc, operation }) => {
         if (operation === 'create' && req.user) {
-          // Add the new item to the author's items array
-          const userResult = await req.payload.findByID({
-            collection: 'users',
-            id: req.user.id,
-          })
-
-          if (userResult) {
-            const currentItems = userResult.items || []
-            await req.payload.update({
-              collection: 'users',
-              id: req.user.id,
-              data: {
-                items: [...currentItems, doc.id],
-              },
-            })
-          }
-
           // Create the initial version (1) snapshot and link it as the current version
           const initialVersion = await req.payload.create({
             collection: 'versions',
@@ -302,6 +293,7 @@ export const Items: CollectionConfig = {
               },
               changedFields: [],
             },
+            req,
           })
 
           await req.payload.update({
@@ -314,6 +306,7 @@ export const Items: CollectionConfig = {
             // Prevent this internal linking update from re-triggering the
             // versioning/tagging logic in beforeChange above.
             context: { skipItemHooks: true },
+            req,
           })
         }
       },
@@ -328,6 +321,8 @@ export const Items: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: true,
+      // Users' `items` join looks items up by this
+      index: true,
     },
     {
       name: 'state',
@@ -351,7 +346,9 @@ export const Items: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       hasMany: true,
-      // Changed only through the /favorite endpoint (local API) or by admins
+      // Users' `favorites` join looks items up by this
+      index: true,
+      // Changed only through the /favorite endpoint (directly in the database) or by admins
       access: {
         read: () => true,
         create: isAdminFieldLevel,
@@ -609,86 +606,44 @@ export const Items: CollectionConfig = {
         }
 
         const { id } = req.routeParams as { id: string }
+        const userId = req.user.id
+        const items = req.payload.db.collections['items']
 
-        const itemResult = await req.payload.find({
-          collection: 'items',
-          where: { id: { equals: id }, state: { equals: 'published' } },
-        })
-
-        if (!itemResult || !itemResult.docs[0]) {
+        // Toggled with atomic updates straight on the collection, so simultaneous clicks can't
+        // overwrite each other or list a user twice. No hooks, versions or updatedAt changes
+        let message: string
+        try {
+          const added = await items.updateOne(
+            { _id: id, state: 'published', favoritedBy: { $ne: userId } },
+            { $addToSet: { favoritedBy: userId }, $inc: { favoritesCount: 1 } },
+            { timestamps: false },
+          )
+          if (added.matchedCount) {
+            message = 'Item favorited'
+          } else {
+            const removed = await items.updateOne(
+              { _id: id, state: 'published', favoritedBy: userId },
+              { $pull: { favoritedBy: userId }, $inc: { favoritesCount: -1 } },
+              { timestamps: false },
+            )
+            if (!removed.matchedCount) {
+              return Response.json({ error: 'item not found' }, { status: 404 })
+            }
+            message = 'Item unfavorited'
+          }
+        } catch {
+          // e.g. a malformed id
           return Response.json({ error: 'item not found' }, { status: 404 })
         }
-        const itemDoc = itemResult.docs[0]
-        const { favoritedBy } = itemDoc || {} // Initialize with empty array if undefined
 
-        const userResult = await req.payload.find({
-          collection: 'users',
-          where: { id: { equals: req.user.id } },
+        const { favoritedBy } = await req.payload.findByID({
+          collection: 'items',
+          id,
+          depth: 1,
+          select: { favoritedBy: true },
+          req,
         })
-
-        if (!userResult || !userResult.docs[0]) {
-          // This case should ideally not happen if req.user is set
-          return Response.json({ error: 'user not found' }, { status: 404 })
-        }
-        const userDoc = userResult.docs[0]
-        const { favorites } = userDoc as User // Initialize with empty array if undefined
-
-        const isFavorited = favoritedBy
-          ?.map((v: string | User) => (typeof v === 'string' ? v : v.id))
-          ?.includes(req.user.id)
-
-        if (isFavorited) {
-          // Item is already favorited, so unfavorite it
-          const updatedFavoritedBy = favoritedBy?.filter(
-            (v: string | User) => (typeof v === 'string' ? v : v.id) !== req.user?.id,
-          )
-          const itemResult = await req.payload.update({
-            collection: 'items',
-            id,
-            data: { favoritedBy: updatedFavoritedBy },
-            // This is a partial update (only favoritedBy), so the version-management
-            // hook would otherwise see undefined for title/license/etc. and think
-            // every field changed, spuriously archiving a new version on every click.
-            context: { skipItemHooks: true },
-          })
-
-          const updatedFavorites = favorites?.filter(
-            (item: string | Item) => typeof item === 'string' || item.id !== id,
-          )
-          await req.payload.update({
-            collection: 'users',
-            id: req.user.id,
-            data: { favorites: updatedFavorites },
-          })
-          return Response.json(
-            {
-              favoritedBy: itemResult.favoritedBy,
-
-              message: 'item unfavorited',
-            },
-            { status: 200 },
-          )
-        } else {
-          // Item is not favorited, so favorite it
-          const updatedFavoritedBy = [...(favoritedBy || []), req.user.id]
-          const itemResult = await req.payload.update({
-            collection: 'items',
-            id,
-            data: { favoritedBy: updatedFavoritedBy },
-            context: { skipItemHooks: true },
-          })
-
-          const updatedFavorites = [...(favorites || []), id]
-          await req.payload.update({
-            collection: 'users',
-            id: req.user.id,
-            data: { favorites: updatedFavorites },
-          })
-          return Response.json(
-            { favoritedBy: itemResult.favoritedBy, message: 'Item favorited' },
-            { status: 200 },
-          )
-        }
+        return Response.json({ favoritedBy, message })
       }),
     },
   ],

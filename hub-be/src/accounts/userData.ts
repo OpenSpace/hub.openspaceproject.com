@@ -65,8 +65,8 @@ export const deleteUnusedFiles = async (
   }
 }
 
-// Items afterDelete: remove the item's versions, its files (current and archived) unless
-// another item uses them, and the references to it on user profiles
+// Items afterDelete: remove the item's versions and its files (current and archived) unless
+// another item uses them
 export const deleteItemData: CollectionAfterDeleteHook = async ({ doc, req }) => {
   const { payload } = req
   const media = new Set<string>()
@@ -95,25 +95,6 @@ export const deleteItemData: CollectionAfterDeleteHook = async ({ doc, req }) =>
 
   await deleteUnusedFiles('media', media, req)
   await deleteUnusedFiles('asset-bundles', bundles, req)
-
-  const users = await payload.find({
-    collection: 'users',
-    where: { or: [{ items: { in: [doc.id] } }, { favorites: { in: [doc.id] } }] },
-    pagination: false,
-    depth: 0,
-    req,
-  })
-  for (const user of users.docs) {
-    await payload.update({
-      collection: 'users',
-      id: user.id,
-      data: {
-        items: (user.items ?? []).map(idOf).filter((id) => id && id !== doc.id) as string[],
-        favorites: (user.favorites ?? []).map(idOf).filter((id) => id && id !== doc.id) as string[],
-      },
-      req,
-    })
-  }
 }
 
 // Users beforeDelete: erase everything the account owns before the user doc goes.
@@ -130,24 +111,12 @@ export const deleteUserContent: CollectionBeforeDeleteHook = async ({ id, req })
     throw new Error(`Could not delete the user's items: ${items.errors.map((e) => e.message).join('; ')}`)
   }
 
-  // Their favorites on other people's items
-  const favorited = await payload.find({
-    collection: 'items',
-    where: { favoritedBy: { in: [userId] } },
-    pagination: false,
-    depth: 0,
-    req,
-  })
-  for (const item of favorited.docs) {
-    await payload.update({
-      collection: 'items',
-      id: item.id,
-      data: { favoritedBy: (item.favoritedBy ?? []).map(idOf).filter((v) => v && v !== userId) as string[] },
-      // Partial update; skip versioning (favoritesCount is still recomputed)
-      context: { skipItemHooks: true },
-      req,
-    })
-  }
+  // Their favorites on other people's items, atomically like the /favorite endpoint
+  await payload.db.collections['items'].updateMany(
+    { favoritedBy: userId },
+    { $pull: { favoritedBy: userId }, $inc: { favoritesCount: -1 } },
+    { timestamps: false },
+  )
 
   // Anything else they uploaded (profile picture, files never attached to an item), unless
   // someone else's item still uses it

@@ -16,6 +16,8 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
   },
+  // Users populated into other docs (item authors, favoritedBy) don't need their item lists
+  defaultPopulate: { items: false, favorites: false },
   // auth: true,
   access: {
     // Hub users only use the API; the admin panel is for admins
@@ -85,6 +87,7 @@ export const Users: CollectionConfig = {
             const users = await payload.find({
               collection: 'users',
               where: { firebaseUID: { equals: firebaseUID } },
+              joins: false,
             })
 
             if (users.docs.length > 0) {
@@ -189,29 +192,23 @@ export const Users: CollectionConfig = {
       defaultValue: '',
     },
 
+    // Worked out from the items when read, only listing items the reader may see. No limit,
+    // as the profile page shows them all; maxDepth 2 so its items come with images and authors
     {
       name: 'items',
-      type: 'relationship',
-      relationTo: 'items',
-      hasMany: true,
-      // Kept in sync by the item hooks and the /favorite endpoint (local API)
-      access: {
-        read: () => true,
-        create: isAdminFieldLevel,
-        update: isAdminFieldLevel,
-      },
+      type: 'join',
+      collection: 'items',
+      on: 'author',
+      defaultLimit: 0,
+      maxDepth: 2,
     },
     {
       name: 'favorites',
-      type: 'relationship',
-      relationTo: 'items',
-      hasMany: true,
-      // Kept in sync by the item hooks and the /favorite endpoint (local API)
-      access: {
-        read: () => true,
-        create: isAdminFieldLevel,
-        update: isAdminFieldLevel,
-      },
+      type: 'join',
+      collection: 'items',
+      on: 'favoritedBy',
+      defaultLimit: 0,
+      maxDepth: 2,
     },
     {
       name: 'password',

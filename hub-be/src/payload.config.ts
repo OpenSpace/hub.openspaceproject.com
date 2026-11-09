@@ -186,6 +186,7 @@ export default buildConfig({
               },
             },
             depth: 0, // Only get the user data, not related collections
+            joins: false,
           })
 
           if (existingUser.docs.length > 0) {

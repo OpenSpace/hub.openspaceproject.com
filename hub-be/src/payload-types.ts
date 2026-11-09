@@ -79,6 +79,10 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    users: {
+      items: 'items';
+      favorites: 'items';
+    };
     media: {
       usedByItems: 'items';
       usedByVersions: 'versions';
@@ -154,8 +158,16 @@ export interface User {
   contactEmail?: string | null;
   institution: string;
   slackHandle?: string | null;
-  items?: (string | Item)[] | null;
-  favorites?: (string | Item)[] | null;
+  items?: {
+    docs?: (string | Item)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  favorites?: {
+    docs?: (string | Item)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   password?: string | null;
   updatedAt: string;
   createdAt: string;

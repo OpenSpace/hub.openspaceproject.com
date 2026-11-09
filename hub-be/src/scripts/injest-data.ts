@@ -298,7 +298,6 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
 
   // 2. Items, each with its image, every file version, and tags
   const itemIdByOldId = new Map<string, string>()
-  const itemIdsByAuthor = new Map<string, string[]>()
   let skippedDependencies = 0
 
   for (const oldItem of items) {
@@ -403,7 +402,6 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
       })
 
       itemIdByOldId.set(oldItem._id, item.id)
-      itemIdsByAuthor.set(ownerId, [...(itemIdsByAuthor.get(ownerId) ?? []), item.id])
       skippedDependencies += oldItem.required?.length ?? 0
       report.itemsCreated++
     } catch (error) {
@@ -411,38 +409,31 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
     }
   }
 
-  // 3. Links that need every user and item to exist: authors' item lists and favorites
-  for (const [userId, itemIds] of itemIdsByAuthor) {
-    const user = await payload.findByID({ collection: 'users', id: userId, depth: 0 })
-    const current = (user.items ?? []).map((item) => (typeof item === 'string' ? item : item.id))
-    await payload.update({
-      collection: 'users',
-      id: userId,
-      data: { items: [...new Set([...current, ...itemIds])] },
-    })
+  // 3. Favorites, once every user and item exists. The old Hub kept them on both the item and
+  // the user; here they only live on the item
+  const favoritedBy = new Map<string, Set<string>>()
+  const addFavorite = (itemId: string | undefined, userId: string | undefined) => {
+    if (itemId && userId) {
+      favoritedBy.set(itemId, (favoritedBy.get(itemId) ?? new Set()).add(userId))
+    }
   }
   for (const oldItem of items) {
-    const itemId = itemIdByOldId.get(oldItem._id)
-    const favoritedBy = (oldItem.favorites ?? [])
-      .map((oldUserId) => userIdByOldId.get(oldUserId))
-      .filter((id): id is string => Boolean(id))
-    if (itemId && favoritedBy.length > 0) {
-      await payload.update({
-        collection: 'items',
-        id: itemId,
-        data: { favoritedBy },
-        context: { skipItemHooks: true },
-      })
+    for (const oldUserId of oldItem.favorites ?? []) {
+      addFavorite(itemIdByOldId.get(oldItem._id), userIdByOldId.get(oldUserId))
     }
   }
   for (const oldUser of oldUsers ?? []) {
-    const userId = userIdByOldId.get(oldUser._id)
-    const favorites = (oldUser.favorites ?? [])
-      .map((oldItemId) => itemIdByOldId.get(oldItemId))
-      .filter((id): id is string => Boolean(id))
-    if (userId && favorites.length > 0) {
-      await payload.update({ collection: 'users', id: userId, data: { favorites } })
+    for (const oldItemId of oldUser.favorites ?? []) {
+      addFavorite(itemIdByOldId.get(oldItemId), userIdByOldId.get(oldUser._id))
     }
+  }
+  for (const [itemId, userIds] of favoritedBy) {
+    await payload.update({
+      collection: 'items',
+      id: itemId,
+      data: { favoritedBy: [...userIds] },
+      context: { skipItemHooks: true },
+    })
   }
 
   if (skippedDependencies > 0) {
