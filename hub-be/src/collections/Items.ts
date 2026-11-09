@@ -8,7 +8,7 @@ import {
   requireOwnUploads,
 } from '@/Access'
 import { Item, User } from '@/payload-types'
-import { validateOpenspaceVersion } from '@/validation/openspaceVersion'
+import { normalizeOpenspaceVersion, validateOpenspaceVersion } from '@/validation/openspaceVersion'
 import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/validation/textFields'
 import { withCors } from '@/withCors'
 import type { CollectionConfig, PayloadRequest, Where } from 'payload'
@@ -455,9 +455,10 @@ export const Items: CollectionConfig = {
     {
       name: 'openspaceVersion',
       type: 'text',
-      defaultValue: '0.21.1',
+      defaultValue: '0.21',
       required: true,
       validate: validateOpenspaceVersion,
+      hooks: { beforeValidate: [normalizeOpenspaceVersion] },
     },
     {
       name: 'image',

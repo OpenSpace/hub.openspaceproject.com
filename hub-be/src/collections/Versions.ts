@@ -1,5 +1,5 @@
 import { isAdmin, readVersionsOfReadableItems } from '@/Access'
-import { validateOpenspaceVersion } from '@/validation/openspaceVersion'
+import { normalizeOpenspaceVersion, validateOpenspaceVersion } from '@/validation/openspaceVersion'
 import type { CollectionConfig, Field } from 'payload'
 
 // Define the version snapshot structure
@@ -40,6 +40,7 @@ const VersionSnapshot: Field[] = [
     name: 'openspaceVersion',
     type: 'text',
     validate: validateOpenspaceVersion,
+    hooks: { beforeValidate: [normalizeOpenspaceVersion] },
   },
   {
     name: 'image',

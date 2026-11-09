@@ -36,17 +36,7 @@ const UploadItemModal: React.FC<UploadItemModalProps> = ({ opened, onClose }) =>
   const [errors, setErrors] = useState<string[]>([]);
 
   const assetTypes = ['asset', 'profile', 'recording', 'webpanel', 'config', 'showcomposer', 'package'];
-  const openSpaceVersions = [
-    '0.20.1',
-    '0.20.0',
-    '0.19.2',
-    '0.19.1',
-    '0.19.0',
-    '0.18.2',
-    '0.18.1',
-    '0.18.0',
-    '0.17.2',
-  ];
+  const openSpaceVersions = ['0.22', '0.21', '0.20'];
   const licenses = [
     'CC BY',
     'CC BY-SA',

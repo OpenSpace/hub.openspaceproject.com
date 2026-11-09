@@ -5,6 +5,7 @@ import path from 'path'
 import { unzipSync } from 'fflate'
 import { bundleMimeTypes, findAssetEntryPath, listZipContents } from '@/collections/AssetBundles'
 import type { Item, Tag } from '@/payload-types'
+import { toMinorVersion } from '@/validation/openspaceVersion'
 import { defaultSiteConfig } from './seed-global-config'
 
 // Imports items, users and their files exported from the old OpenSpace Hub
@@ -339,7 +340,7 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
 
       const tags = (
         await Promise.all([
-          tagId('openspaceVersion', oldItem.openspaceVersion),
+          tagId('openspaceVersion', oldItem.openspaceVersion && toMinorVersion(oldItem.openspaceVersion)),
           tagId('license', oldItem.license),
           tagId('itemType', oldItem.type),
         ])

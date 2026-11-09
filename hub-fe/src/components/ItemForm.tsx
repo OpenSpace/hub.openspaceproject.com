@@ -62,17 +62,10 @@ const FALLBACK_LICENSE_OPTIONS = [
   { value: 'Proprietary', label: 'Proprietary' },
 ];
 
-const FALLBACK_OPENSPACE_VERSIONS = [
-  { value: '0.20.1', label: '0.20.1' },
-  { value: '0.20.0', label: '0.20.0' },
-  { value: '0.19.2', label: '0.19.2' },
-  { value: '0.19.1', label: '0.19.1' },
-  { value: '0.19.0', label: '0.19.0' },
-  { value: '0.18.2', label: '0.18.2' },
-  { value: '0.18.1', label: '0.18.1' },
-  { value: '0.18.0', label: '0.18.0' },
-  { value: '0.17.2', label: '0.17.2' },
-];
+const FALLBACK_OPENSPACE_VERSIONS = ['0.22', '0.21', '0.20'].map((version) => ({
+  value: version,
+  label: version,
+}));
 
 // Icon and text as one centered unit, for the file pickers' placeholder and chosen file name
 const UploadLabel = ({ children }: { children: React.ReactNode }) => (
