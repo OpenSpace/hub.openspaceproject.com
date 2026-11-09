@@ -54,7 +54,7 @@ export function AccountData({ user, itemCount }: AccountDataProps) {
       console.error('Failed to export data:', err);
       notifications.show({
         title: 'Download failed',
-        message: 'Could not download your data. Please try again later.',
+        message: err instanceof Error ? err.message : 'Could not download your data.',
         color: 'red',
         icon: <IconX size={16} />,
       });
@@ -78,7 +78,7 @@ export function AccountData({ user, itemCount }: AccountDataProps) {
       console.error('Failed to delete account:', err);
       notifications.show({
         title: 'Delete failed',
-        message: 'Could not delete your account. Please try again later.',
+        message: err instanceof Error ? err.message : 'Could not delete your account.',
         color: 'red',
         icon: <IconX size={16} />,
       });

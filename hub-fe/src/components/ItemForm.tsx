@@ -31,6 +31,7 @@ import {
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
 import { Item } from '../types/items';
 import { link } from 'fs/promises';
+import { apiUrl, uploadFile } from '@/utils/api';
 import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/utils/fieldLimits';
 import { ITEM_TYPE_LABELS } from '@/utils/tagUtils';
 import { fileTree, UPLOAD_INSTRUCTIONS } from '@/utils/uploadInstructions';
@@ -82,7 +83,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
-    item?.image?.url ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${item.image.url}` : null
+    item?.image?.url ? apiUrl(item.image.url) : null
   );
   const [assetFile, setAssetFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -209,190 +210,88 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
       };
       reader.readAsDataURL(file);
     } else {
-      setImagePreview(
-        item?.image?.url ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${item.image.url}` : null
-      );
+      setImagePreview(item?.image?.url ? apiUrl(item.image.url) : null);
     }
   };
 
   // Upload image to media endpoint and return the ID
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const uploadImage = async (file: File): Promise<string> => {
+    notifications.show({
+      id: 'image-upload',
+      loading: true,
+      title: 'Uploading Image',
+      message: 'Uploading your image...',
+      autoClose: false,
+      withCloseButton: false,
+    });
     try {
-      notifications.show({
+      const id = await uploadFile(
+        '/api/media',
+        file,
+        { alt: form.values.title || 'Item image' },
+        user
+      );
+      notifications.update({
         id: 'image-upload',
-        loading: true,
-        title: 'Uploading Image',
-        message: 'Uploading your image...',
-        autoClose: false,
-        withCloseButton: false,
+        color: 'green',
+        title: 'Image Uploaded',
+        message: 'Your image has been uploaded successfully.',
+        icon: <IconCheck size={16} />,
+        loading: false,
+        autoClose: 5000,
       });
-
-      // Create form data for image upload
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Add metadata as JSON string
-      const payload = {
-        alt: form.values.title || 'Item image',
-      };
-      formData.append('_payload', JSON.stringify(payload));
-
-      // Use fetch directly with FormData
-      const apiUrl = import.meta.env.VITE_PAYLOAD_API_URL;
-      const token = await user?.getIdToken();
-      const response = await fetch(`${apiUrl}/api/media`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Image upload response error:', errorText);
-        throw new Error(`Image upload failed with status ${response.status}: ${errorText}`);
-      }
-
-      const responseData = await response.json();
-      console.log('responseData', responseData);
-      if (responseData && responseData.doc.id) {
-        notifications.update({
-          id: 'image-upload',
-          color: 'green',
-          title: 'Image Uploaded',
-          message: 'Your image has been uploaded successfully.',
-          icon: <IconCheck size={16} />,
-          loading: false,
-          autoClose: 5000,
-        });
-
-        return responseData.doc.id;
-      } else {
-        throw new Error('Image upload failed: No ID returned');
-      }
+      return id;
     } catch (err) {
-      console.error('Error uploading image:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
-
       notifications.update({
         id: 'image-upload',
         color: 'red',
         title: 'Image Upload Failed',
-        message: errorMessage,
+        message: err instanceof Error ? err.message : 'Failed to upload image',
         icon: <IconX size={16} />,
         loading: false,
         autoClose: 5000,
       });
-
       throw err;
     }
   };
 
   // Upload asset bundle and return the ID
-  const uploadAssetBundle = async (file: File, formValues: any): Promise<string | null> => {
+  const uploadAssetBundle = async (file: File, formValues: typeof form.values): Promise<string> => {
+    notifications.show({
+      id: 'asset-upload',
+      loading: true,
+      title: 'Uploading Asset Bundle',
+      message: 'Validating and uploading your asset bundle...',
+      autoClose: false,
+      withCloseButton: false,
+    });
     try {
-      notifications.show({
+      const id = await uploadFile(
+        '/api/asset-bundles/validate-and-upload',
+        file,
+        { title: formValues.title, type: formValues.type },
+        user
+      );
+      notifications.update({
         id: 'asset-upload',
-        loading: true,
-        title: 'Uploading Asset Bundle',
-        message: 'Validating and uploading your asset bundle...',
-        autoClose: false,
-        withCloseButton: false,
+        color: 'green',
+        title: 'Asset Bundle Uploaded',
+        message: 'Your asset bundle has been validated and uploaded successfully.',
+        icon: <IconCheck size={16} />,
+        loading: false,
+        autoClose: 5000,
       });
-
-      // Create form data for asset bundle upload
-      const formData = new FormData();
-
-      // Add the file with the correct field name
-      formData.append('file', file);
-
-      // Add metadata as a JSON string
-      const payload = {
-        title: formValues.title,
-        type: formValues.type,
-      };
-
-      formData.append('_payload', JSON.stringify(payload));
-
-      // If editing, include the item ID
-      if (isEdit && item) {
-        formData.append('id', item.id);
-      }
-
-      console.log('Uploading asset bundle with payload:', payload);
-
-      // Log the FormData entries for debugging
-      for (const pair of formData.entries()) {
-        console.log(`${pair[0]}: ${pair[1]}`);
-      }
-
-      // Use fetch directly instead of makeRequest to have more control
-      const apiUrl = import.meta.env.VITE_PAYLOAD_API_URL;
-      //   const token = await (await import('../contexts/AuthContext')).getIdToken();
-      const token = await user?.getIdToken();
-      const response = await fetch(`${apiUrl}/api/asset-bundles/validate-and-upload`, {
-        method: 'POST',
-        body: formData,
-        // Important: Don't set Content-Type header for FormData
-        headers: {
-          // Add authorization if needed
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', errorText);
-        setError(`${errorText}`);
-        throw new Error(`Request failed with status ${response.status}: ${errorText}`);
-      }
-
-      const responseData = await response.json();
-
-      // Handle the response
-      if (responseData && responseData.id) {
-        notifications.update({
-          id: 'asset-upload',
-          color: 'green',
-          title: 'Asset Bundle Uploaded',
-          message: 'Your asset bundle has been validated and uploaded successfully.',
-          icon: <IconCheck size={16} />,
-          loading: false,
-          autoClose: 5000,
-        });
-
-        return responseData.id;
-      } else {
-        const errorMessage = responseData?.message || 'Asset bundle validation failed';
-        notifications.update({
-          id: 'asset-upload',
-          color: 'red',
-          title: 'Upload Failed',
-          message: errorMessage,
-          icon: <IconX size={16} />,
-          loading: false,
-          autoClose: 5000,
-        });
-
-        throw new Error(errorMessage);
-      }
+      return id;
     } catch (err) {
-      console.error('Error uploading asset bundle:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to upload file';
-
       notifications.update({
         id: 'asset-upload',
         color: 'red',
         title: 'Upload Failed',
-        message: errorMessage,
+        message: err instanceof Error ? err.message : 'Failed to upload file',
         icon: <IconX size={16} />,
         loading: false,
         autoClose: 5000,
       });
-
       throw err;
     }
   };
@@ -441,72 +340,12 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
       let currentAssetBundleId = assetBundleId;
       let imageId = item?.image?.id || null;
 
-      // Upload asset bundle if a new file is selected
+      // Upload new files first; each upload shows its own progress and error
       if (assetFile) {
-        try {
-          currentAssetBundleId = await uploadAssetBundle(assetFile, values);
-          if (!currentAssetBundleId) {
-            setError('Failed to upload asset bundle');
-            setLoading(false);
-            notifications.update({
-              id: 'form-submit',
-              color: 'red',
-              title: 'Submission Failed',
-              message: 'Failed to upload asset bundle',
-              icon: <IconX size={16} />,
-              loading: false,
-              autoClose: 5000,
-            });
-            return;
-          }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to upload asset bundle');
-          setLoading(false);
-          notifications.update({
-            id: 'form-submit',
-            color: 'red',
-            title: 'Submission Failed',
-            message: 'Failed to upload asset bundle',
-            icon: <IconX size={16} />,
-            loading: false,
-            autoClose: 5000,
-          });
-          return;
-        }
+        currentAssetBundleId = await uploadAssetBundle(assetFile, values);
       }
-
-      // Upload image if a new file is selected
       if (imageFile) {
-        try {
-          imageId = await uploadImage(imageFile);
-          if (!imageId) {
-            setError('Failed to upload image');
-            setLoading(false);
-            notifications.update({
-              id: 'form-submit',
-              color: 'red',
-              title: 'Submission Failed',
-              message: 'Failed to upload image',
-              icon: <IconX size={16} />,
-              loading: false,
-              autoClose: 5000,
-            });
-            return;
-          }
-        } catch (err) {
-          setError('Failed to upload image');
-          setLoading(false);
-          notifications.update({
-            id: 'form-submit',
-            color: 'red',
-            title: 'Submission Failed',
-            message: 'Failed to upload image',
-            icon: <IconX size={16} />,
-            loading: false,
-            autoClose: 5000,
-          });
-          return;
-        }
+        imageId = await uploadImage(imageFile);
       }
 
       // Prepare JSON data for item creation/update
@@ -527,13 +366,10 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
       }
 
       // Make the request to create or update the item
-      const response = await makeRequest(isEdit && item ? `/api/items/${item.id}` : '/api/items', {
-        method: isEdit ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jsonData),
-      });
+      const response = await makeRequest<{ doc: Item }>(
+        isEdit && item ? `/api/items/${item.id}` : '/api/items',
+        { method: isEdit ? 'PATCH' : 'POST', body: jsonData }
+      );
 
       // Update notification for success
       notifications.update({
@@ -552,14 +388,15 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
       navigate(`/items/${response.doc.id}`);
     } catch (err) {
       console.error('Error submitting form:', err);
-      setError('Failed to save item. Please try again.');
+      const message = err instanceof Error ? err.message : 'Failed to save item. Please try again.';
+      setError(message);
 
       // Update notification for error
       notifications.update({
         id: 'form-submit',
         color: 'red',
         title: 'Submission Failed',
-        message: 'Failed to save item. Please try again.',
+        message,
         icon: <IconX size={16} />,
         loading: false,
         autoClose: 5000,

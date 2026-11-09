@@ -23,6 +23,7 @@ import {
   UPLOADS_DISABLED_MESSAGE,
   useAuth,
 } from '../contexts/AuthContext';
+import { apiUrl } from '../utils/api';
 import { LoginModal } from './LoginModal';
 import OpenSpaceButton from './OpenSpaceButton';
 
@@ -185,11 +186,7 @@ export function TopMenuBar() {
                     size="sm"
                     radius="xl"
                     color={colorScheme === 'dark' ? 'blue' : 'dark'}
-                    src={
-                      payloadUser?.thumbnailUrl
-                        ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${payloadUser.thumbnailUrl}`
-                        : null
-                    }
+                    src={payloadUser?.thumbnailUrl ? apiUrl(payloadUser.thumbnailUrl) : null}
                   >
                     {displayName().charAt(0).toUpperCase()}
                   </Avatar>
@@ -288,11 +285,7 @@ export function TopMenuBar() {
                     size="sm"
                     radius="xl"
                     color={colorScheme === 'dark' ? 'blue' : 'dark'}
-                    src={
-                      payloadUser?.thumbnailUrl
-                        ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${payloadUser.thumbnailUrl}`
-                        : null
-                    }
+                    src={payloadUser?.thumbnailUrl ? apiUrl(payloadUser.thumbnailUrl) : null}
                   >
                     {displayName().charAt(0).toUpperCase()}
                   </Avatar>

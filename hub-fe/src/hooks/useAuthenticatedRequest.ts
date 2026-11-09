@@ -1,33 +1,16 @@
 import { useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { apiFetch, ApiOptions } from '../utils/api';
 
 export const useAuthenticatedRequest = () => {
   const { user } = useAuth();
 
   const makeRequest = useCallback(
-    async (endpoint: string, options: RequestInit = {}) => {
+    async <T = unknown>(endpoint: string, options: Omit<ApiOptions, 'user'> = {}) => {
       if (!user) {
-        throw new Error('No authentication token available');
+        throw new Error('You must be logged in');
       }
-      // Returns the cached token, refreshing it only when it is about to expire.
-      const token = await user.getIdToken();
-
-      const headers = new Headers(options.headers);
-      headers.set('Authorization', `Bearer ${token}`);
-      if (typeof options.body === 'string' && !headers.has('Content-Type')) {
-        headers.set('Content-Type', 'application/json');
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}${endpoint}`, {
-        ...options,
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response.json();
+      return apiFetch<T>(endpoint, { ...options, user });
     },
     [user]
   );

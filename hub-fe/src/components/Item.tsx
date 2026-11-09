@@ -26,6 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
 import { useOpenSpaceImport } from '@/hooks/useOpenSpaceImport';
 import { Tag } from '@/types/items';
+import { apiUrl } from '@/utils/api';
 import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
 import { trackItem } from '@/utils/trackItem';
 import { ItemTypePlaceholder } from './ItemTypeIcon';
@@ -85,7 +86,7 @@ const Item: React.FC<ItemProps> = ({
 
   const handleFavorite = async () => {
     try {
-      const response = await makeRequest(`/api/items/${id}/favorite`, {
+      const response = await makeRequest<{ favoritedBy: User[] }>(`/api/items/${id}/favorite`, {
         method: 'POST',
       });
       setFavorites(response.favoritedBy);
@@ -117,7 +118,7 @@ const Item: React.FC<ItemProps> = ({
         <Link to={`/items/${id}`} style={{ display: 'block' }}>
           {image.url ? (
             <Image
-              src={`${import.meta.env.VITE_PAYLOAD_API_URL}/${image.url}`}
+              src={apiUrl(image.url)}
               alt={image.alt}
               height={140}
               fit="cover"
@@ -247,7 +248,7 @@ const Item: React.FC<ItemProps> = ({
           onClick={() => {
             if (assetBundle?.url) {
               importToOpenSpace(
-                `${import.meta.env.VITE_PAYLOAD_API_URL}${assetBundle.url}`,
+                apiUrl(assetBundle.url),
                 type,
                 assetBundle.filename,
                 assetBundle.entryPath,
@@ -262,7 +263,7 @@ const Item: React.FC<ItemProps> = ({
 
         <Button
           component="a"
-          href={assetBundle?.url ? `${import.meta.env.VITE_PAYLOAD_API_URL}${assetBundle.url}` : undefined}
+          href={assetBundle?.url ? apiUrl(assetBundle.url) : undefined}
           download={assetBundle?.filename || true}
           variant="outline"
           size="xs"

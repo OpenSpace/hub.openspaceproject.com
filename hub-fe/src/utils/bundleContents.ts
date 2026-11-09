@@ -1,3 +1,5 @@
+import { apiFetch } from './api';
+
 // A file inside a .zip asset bundle, recorded by the backend at upload
 export interface BundleFile {
   path: string;
@@ -15,11 +17,9 @@ export const fetchBundleContents = async (filename: string): Promise<BundleFile[
     limit: '1',
   });
   try {
-    const response = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}/api/asset-bundles?${params}`);
-    if (!response.ok) {
-      return undefined;
-    }
-    const data = await response.json();
+    const data = await apiFetch<{ docs?: { contents?: BundleFile[] }[] }>(
+      `/api/asset-bundles?${params}`
+    );
     return data.docs?.[0]?.contents ?? undefined;
   } catch {
     return undefined;

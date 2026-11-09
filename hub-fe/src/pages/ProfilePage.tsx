@@ -22,9 +22,9 @@ import { AccountData } from '../components/AccountData';
 import Item from '../components/Item';
 import { UserProfileForm } from '../components/UserProfileForm';
 import { useAuth } from '../contexts/AuthContext';
-import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
 import { Item as ItemType } from '../types/items';
 import { User } from '../types/users';
+import { apiFetch, apiUrl } from '../utils/api';
 import { itemCardQuery } from '../utils/itemCardQuery';
 
 const ITEMS_PER_PAGE = 12;
@@ -51,18 +51,11 @@ function useItemCardsPage(where: Record<string, unknown> | null, page: number) {
     let cancelled = false;
     const fetchPage = async () => {
       try {
-        const token = await user?.getIdToken();
         const query = stringify(
           { ...itemCardQuery, where: parsedWhere, sort: '-createdAt', limit: ITEMS_PER_PAGE, page },
           { addQueryPrefix: true }
         );
-        const response = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}/api/items${query}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result: ItemCardsPage = await response.json();
+        const result = await apiFetch<ItemCardsPage>(`/api/items${query}`, { user });
         if (!cancelled) {
           setData(result);
           setError(false);
@@ -102,7 +95,6 @@ function ProfileContent() {
   const { userId } = useParams();
   const location = useLocation();
   const { user, payloadUser } = useAuth();
-  const { makeRequest } = useAuthenticatedRequest();
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   const [profileData, setProfileData] = useState<User | null>(null);
@@ -154,15 +146,10 @@ function ProfileContent() {
         // Public profiles work without a token; send one when logged in so the API includes
         // fields only the user themselves (or an admin) may see, such as email. Their items and
         // favorites are paged separately
-        const token = await user?.getIdToken();
-        const response = await fetch(
-          `${import.meta.env.VITE_PAYLOAD_API_URL}/api/users/${targetUserId}?depth=1&joins[items]=false&joins[favorites]=false`,
-          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        const userData = await apiFetch<User>(
+          `/api/users/${targetUserId}?depth=1&joins[items]=false&joins[favorites]=false`,
+          { user }
         );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const userData: User = await response.json();
         setProfileData(userData);
 
         setError(null);
@@ -189,7 +176,7 @@ function ProfileContent() {
     else if (userId) {
       fetchUserData();
     }
-  }, [isOwnProfile, userId, payloadUser?.id, user, makeRequest]);
+  }, [isOwnProfile, userId, payloadUser?.id, user]);
 
   if (loading) {
     return (
@@ -225,9 +212,7 @@ function ProfileContent() {
               size="xl"
               radius="xl"
               src={
-                profileData?.thumbnail?.url
-                  ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${profileData.thumbnail.url}`
-                  : null
+                profileData?.thumbnail?.url ? apiUrl(profileData.thumbnail.url) : null
               }
             />
             <div>

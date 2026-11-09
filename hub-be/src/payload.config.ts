@@ -16,6 +16,7 @@ import { Items } from './collections/Items'
 import { AssetBundles } from './collections/AssetBundles'
 import { SiteConfig } from './globals/site-config'
 import { withCors } from './withCors'
+import { apiError } from './apiError'
 import { clientIp, rateLimiter, tooManyRequests } from './abuseLimits'
 import { SIGNIN_DISABLED_MESSAGE, signinEnabled } from './Access'
 import { s3Storage } from '@payloadcms/storage-s3'
@@ -196,7 +197,7 @@ export default buildConfig({
           // switch turns off. Accounts already linked (above) keep working, since the frontend
           // calls this on every page load and refusing them would sign everyone out
           if (!(await signinEnabled(req.payload))) {
-            return Response.json({ message: SIGNIN_DISABLED_MESSAGE }, { status: 403 })
+            return apiError(SIGNIN_DISABLED_MESSAGE, 403)
           }
 
           // Claim an existing user (e.g. one from the seed, with no Firebase login yet) by email.
@@ -214,14 +215,11 @@ export default buildConfig({
 
           if (existingUserByEmail?.docs.length) {
             if (!decodedToken.email_verified) {
-              return Response.json(
-                {
-                  message:
-                    `An account already exists for ${decodedToken.email}, but this login's email ` +
-                    'is not verified. Log in with the method you used before, or ask an admin ' +
-                    'to connect this login to your account.',
-                },
-                { status: 409 },
+              return apiError(
+                `An account already exists for ${decodedToken.email}, but this login's email ` +
+                  'is not verified. Log in with the method you used before, or ask an admin ' +
+                  'to connect this login to your account.',
+                409,
               )
             }
             const updatedUser = await req.payload.update({
@@ -264,14 +262,7 @@ export default buildConfig({
           return Response.json(newUser, {})
         } catch (error) {
           console.error('Registration error:', error)
-          return Response.json(
-            {
-              message: (error as Error).message || 'Failed to register user',
-            },
-            {
-              status: 400
-            },
-          )
+          return apiError((error as Error).message || 'Failed to register user', 400)
         }
       }),
     },

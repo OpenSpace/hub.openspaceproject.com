@@ -1,4 +1,5 @@
 import fsPromises from 'fs/promises'
+import { apiError } from '@/apiError'
 import { firebaseAuth } from './firebase'
 import type {
   CollectionAfterDeleteHook,
@@ -155,7 +156,7 @@ const fileInfo = (file: unknown) => {
 // GET /api/users/me/export: everything the Hub holds about the logged-in user, as JSON
 export const exportUserData: PayloadHandler = async (req) => {
   if (!req.user) {
-    return Response.json({ error: 'You must be logged in' }, { status: 401 })
+    return apiError('You must be logged in', 401)
   }
   const { payload } = req
   const userId = req.user.id

@@ -6,6 +6,7 @@ import {
   requireOwnUploads,
 } from '@/Access'
 import { deleteUserContent, exportUserData } from '@/accounts/userData'
+import { apiError } from '@/apiError'
 import { verifyFirebaseToken } from '@/payload.config'
 import { NAME_MAX_LENGTH, validateLink, validateUsername } from '@/validation/textFields'
 import { withCors } from '@/withCors'
@@ -62,10 +63,7 @@ export const Users: CollectionConfig = {
       path,
       method: 'post' as const,
       handler: withCors(async () =>
-        Response.json(
-          { message: 'Password reset is turned off. Ask an admin to reset your password.' },
-          { status: 403 },
-        ),
+        apiError('Password reset is turned off. Ask an admin to reset your password.', 403),
       ),
     })),
   ],

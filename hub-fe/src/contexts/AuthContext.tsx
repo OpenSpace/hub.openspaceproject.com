@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { notifications } from '@mantine/notifications';
 import { auth } from '../firebase/config'; // We'll create this next
+import { apiFetch } from '../utils/api';
 import { ItemType } from '../utils/tagUtils';
 
 export const UPLOADS_DISABLED_MESSAGE = 'Uploading currently disabled';
@@ -75,15 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchSiteConfig = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_PAYLOAD_API_URL}/api/globals/site-config`
-        );
-        if (response.ok) {
-          const config = await response.json();
-          setSiteConfig(config);
-        } else {
-          console.error('Failed to fetch site configuration');
-        }
+        setSiteConfig(await apiFetch<SiteConfig>('/api/globals/site-config'));
       } catch (err) {
         console.error('Error fetching site configuration:', err);
       }
@@ -94,38 +87,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const syncUserWithPayload = async (token: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}/api/register`, {
+      // Fails with e.g. a 409 when the email belongs to an account this login can't claim
+      const userData = await apiFetch<PayloadUser>('/api/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ idToken: token }),
+        body: { idToken: token },
       });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setPayloadUser(userData);
-        // The account only has the picture's id, so look up its address for the menu's avatar
-        if (typeof userData.thumbnail === 'string') {
-          try {
-            const media = await fetch(
-              `${import.meta.env.VITE_PAYLOAD_API_URL}/api/media/${userData.thumbnail}?depth=0`
-            );
-            if (media.ok) {
-              const { url } = await media.json();
-              setPayloadUser((current) =>
-                current && current.id === userData.id ? { ...current, thumbnailUrl: url } : current
-              );
-            }
-          } catch (err) {
-            console.error('Error loading the profile picture:', err);
-          }
+      setPayloadUser(userData);
+      // The account only has the picture's id, so look up its address for the menu's avatar
+      if (typeof userData.thumbnail === 'string') {
+        try {
+          const { url } = await apiFetch<{ url: string }>(
+            `/api/media/${userData.thumbnail}?depth=0`
+          );
+          setPayloadUser((current) =>
+            current && current.id === userData.id ? { ...current, thumbnailUrl: url } : current
+          );
+        } catch (err) {
+          console.error('Error loading the profile picture:', err);
         }
-      } else {
-        // e.g. 409 when the email belongs to an account this login can't claim
-        const body = await response.json().catch(() => null);
-        throw new Error(body?.message || 'Failed to sync with Payload');
       }
     } catch (err) {
       console.error('Error syncing with Payload:', err);

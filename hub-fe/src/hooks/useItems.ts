@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash.debounce';
 import { stringify } from 'qs-esm';
 import { Item, Tag } from '@/types/items';
+import { apiFetch } from '@/utils/api';
 import { itemCardQuery } from '@/utils/itemCardQuery';
 
 interface PaginatedResponse {
@@ -106,13 +107,9 @@ export function useItems({
         return;
       }
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_PAYLOAD_API_URL}/api/items/tag-facets${stringify({ where }, { addQueryPrefix: true })}`
+        const data = await apiFetch<{ tags: TagFacet[] }>(
+          `/api/items/tag-facets${stringify({ where }, { addQueryPrefix: true })}`
         );
-        if (!response.ok) {
-          throw new Error('Failed to fetch tags');
-        }
-        const data: { tags: TagFacet[] } = await response.json();
         facetCache.set(cacheKey, data.tags);
         setTagFacets(data.tags);
       } catch (err) {
@@ -168,15 +165,7 @@ export function useItems({
         // Convert query object to query string using qs-esm
         const stringifiedQuery = stringify(query, { addQueryPrefix: true });
 
-        const response = await fetch(
-          `${import.meta.env.VITE_PAYLOAD_API_URL}/api/items${stringifiedQuery}`
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch items');
-        }
-
-        const data: PaginatedResponse = await response.json();
+        const data = await apiFetch<PaginatedResponse>(`/api/items${stringifiedQuery}`);
 
         // Cache the results
         searchCache.set(cacheKey, {

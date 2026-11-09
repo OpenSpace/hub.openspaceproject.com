@@ -1,6 +1,7 @@
 import { executeAuthStrategies, getPayload, headersWithCors } from 'payload'
 
 import type { PayloadRequest, SanitizedConfig } from 'payload'
+import { apiError } from './apiError'
 
 // Apache appends the address it got the request from, so only the last entry can't be forged.
 // Undefined when not behind Apache (local development)
@@ -29,10 +30,7 @@ export const rateLimiter = (limit: number, windowMs: number) => {
 }
 
 export const tooManyRequests = () =>
-  Response.json(
-    { message: 'Too many requests. Try again in a minute.' },
-    { status: 429, headers: { 'Retry-After': '60' } },
-  )
+  apiError('Too many requests. Try again in a minute.', 429, { headers: { 'Retry-After': '60' } })
 
 type RestHandler = (
   request: Request,
@@ -63,12 +61,11 @@ export const limitUploads =
       req: { headers: request.headers, payload } as PayloadRequest,
     })
     if (!user) {
-      return new Response('You must be logged in to upload', { status: 401, headers })
+      return apiError('You must be logged in to upload', 401, { headers })
     }
     const key = `${user.collection}:${user.id}`
     if (uploadsInProgress.has(key)) {
-      return new Response('Another upload is still in progress. Wait for it to finish.', {
-        status: 429,
+      return apiError('Another upload is still in progress. Wait for it to finish.', 429, {
         headers,
       })
     }

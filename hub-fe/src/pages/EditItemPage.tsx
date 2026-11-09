@@ -25,7 +25,7 @@ export function EditItemPage() {
     }
     const fetchItem = async () => {
       try {
-        const item: Item = await makeRequest(`/api/items/${id}`);
+        const item = await makeRequest<Item>(`/api/items/${id}`);
         if (!isAdmin && item.author?.id !== userId) {
           notifications.show({
             title: 'Permission Denied',

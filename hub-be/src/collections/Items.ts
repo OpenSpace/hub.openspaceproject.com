@@ -1,5 +1,6 @@
 import { clientIp, rateLimiter, tooManyRequests } from '@/abuseLimits'
 import { deleteItemData } from '@/accounts/userData'
+import { apiError } from '@/apiError'
 import {
   canUpload,
   isAdminFieldLevel,
@@ -543,7 +544,7 @@ export const Items: CollectionConfig = {
           })
         } catch (error) {
           // e.g. a malformed or disallowed `where`
-          return Response.json({ error: (error as Error).message }, { status: 400 })
+          return apiError((error as Error).message, 400)
         }
       }),
     },
@@ -562,7 +563,7 @@ export const Items: CollectionConfig = {
           // fall through to the validation below
         }
         if (kind !== 'download' && kind !== 'import') {
-          return Response.json({ error: "kind must be 'download' or 'import'" }, { status: 400 })
+          return apiError("kind must be 'download' or 'import'", 400)
         }
 
         // Repeat clicks from one address on one item inside the window are ignored (still a 200,
@@ -592,11 +593,11 @@ export const Items: CollectionConfig = {
             { timestamps: false },
           )
           if (result.matchedCount === 0) {
-            return Response.json({ error: 'item not found' }, { status: 404 })
+            return apiError('Item not found', 404)
           }
         } catch {
           // e.g. a malformed id
-          return Response.json({ error: 'item not found' }, { status: 404 })
+          return apiError('Item not found', 404)
         }
         return Response.json({ ok: true })
       }),
@@ -606,7 +607,7 @@ export const Items: CollectionConfig = {
       method: 'post',
       handler: withCors(async (req: PayloadRequest) => {
         if (!req.user) {
-          return Response.json({ error: 'forbidden' }, { status: 403 })
+          return apiError('You must be logged in to favorite items', 401)
         }
 
         const { id } = req.routeParams as { id: string }
@@ -631,13 +632,13 @@ export const Items: CollectionConfig = {
               { timestamps: false },
             )
             if (!removed.matchedCount) {
-              return Response.json({ error: 'item not found' }, { status: 404 })
+              return apiError('Item not found', 404)
             }
             message = 'Item unfavorited'
           }
         } catch {
           // e.g. a malformed id
-          return Response.json({ error: 'item not found' }, { status: 404 })
+          return apiError('Item not found', 404)
         }
 
         const { favoritedBy } = await req.payload.findByID({

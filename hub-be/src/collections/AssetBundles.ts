@@ -1,6 +1,7 @@
 import { CollectionConfig } from 'payload'
 import path from 'path'
 import { unzipSync } from 'fflate'
+import { apiError } from '@/apiError'
 import { withCors } from '@/withCors'
 import {
   canUploadRequest,
@@ -221,10 +222,10 @@ export const AssetBundles: CollectionConfig = {
           // payload.create below uses the local API, which skips collection access, so check
           // here too: logged in, and uploads not switched off in site-config
           if (!req.user) {
-            return new Response('You must be logged in to upload', { status: 401 })
+            return apiError('You must be logged in to upload', 401)
           }
           if (!(await canUploadRequest(req))) {
-            return new Response(UPLOADS_DISABLED_MESSAGE, { status: 403 })
+            return apiError(UPLOADS_DISABLED_MESSAGE, 403)
           }
           // const formData = await req.json?.()
           const formData = await req.formData?.()
@@ -234,10 +235,10 @@ export const AssetBundles: CollectionConfig = {
           const title = payload?.title
           const type = payload?.type
           if (!file) {
-            return new Response('No file provided', { status: 400 })
+            return apiError('No file provided', 400)
           }
           if (file.size > MAX_BUNDLE_BYTES) {
-            return new Response(`File is larger than ${MAX_BUNDLE_LABEL}`, { status: 413 })
+            return apiError(`File is larger than ${MAX_BUNDLE_LABEL}`, 413)
           }
 
           // Validate based on type
@@ -250,7 +251,7 @@ export const AssetBundles: CollectionConfig = {
           const zipEntries = fileExt === '.zip' ? readBundleEntries(fileData) : undefined
           const unsafePath = zipEntries && Object.keys(zipEntries).find(isUnsafeZipPath)
           if (unsafePath) {
-            return new Response(`ZIP contains an invalid path: ${unsafePath}`, { status: 400 })
+            return apiError(`ZIP contains an invalid path: ${unsafePath}`, 400)
           }
 
           switch (type) {
@@ -321,7 +322,7 @@ export const AssetBundles: CollectionConfig = {
           }
 
           if (!isValid) {
-            return new Response(errorMessage, { status: 400 })
+            return apiError(errorMessage, 400)
           }
 
           // The browser doesn't know custom OpenSpace extensions (.profile, .asset, .osrec, .osrectxt)
@@ -358,25 +359,14 @@ export const AssetBundles: CollectionConfig = {
             },
           })
 
-          return new Response(JSON.stringify(result), {
-            status: 200,
-            // headers: {
-            //   'Access-Control-Allow-Origin': 'http://localhost:5173',
-            //   'Access-Control-Allow-Credentials': 'true',
-            // },
-          })
+          // Same shape as Payload's own create response
+          return Response.json({ doc: result })
         } catch (error: any) {
           if (error instanceof BundleTooLargeError) {
-            return new Response(error.message, { status: 413 })
+            return apiError(error.message, 413)
           }
           console.error(error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 500,
-            // headers: {
-            //   'Access-Control-Allow-Origin': 'http://localhost:5173',
-            //   'Access-Control-Allow-Credentials': 'true',
-            // },
-          })
+          return apiError(error.message, 500)
         }
       }),
     },

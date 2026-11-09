@@ -18,6 +18,7 @@ import { notifications } from '@mantine/notifications';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
 import { User } from '../types/users';
+import { apiUrl, uploadFile } from '../utils/api';
 import {
   LINK_MAX_LENGTH,
   linkError,
@@ -37,7 +38,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
-    user?.thumbnail?.url ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${user.thumbnail.url}` : null
+    user?.thumbnail?.url ? apiUrl(user.thumbnail.url) : null
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -90,81 +91,47 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       };
       reader.readAsDataURL(file);
     } else {
-      setImagePreview(
-        user?.thumbnail?.url
-          ? `${import.meta.env.VITE_PAYLOAD_API_URL}/${user.thumbnail.url}`
-          : null
-      );
+      setImagePreview(user?.thumbnail?.url ? apiUrl(user.thumbnail.url) : null);
     }
   };
 
   // Upload image to media endpoint and return the ID
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const uploadImage = async (file: File): Promise<string> => {
+    notifications.show({
+      id: 'image-upload',
+      loading: true,
+      title: 'Uploading Image',
+      message: 'Uploading your image...',
+      autoClose: false,
+      withCloseButton: false,
+    });
     try {
-      notifications.show({
+      const id = await uploadFile(
+        '/api/media',
+        file,
+        { alt: form.values.username || 'Profile image' },
+        firebaseUser
+      );
+      notifications.update({
         id: 'image-upload',
-        loading: true,
-        title: 'Uploading Image',
-        message: 'Uploading your image...',
-        autoClose: false,
-        withCloseButton: false,
+        color: 'green',
+        title: 'Image Uploaded',
+        message: 'Your image has been uploaded successfully.',
+        icon: <IconCheck size={16} />,
+        loading: false,
+        autoClose: 5000,
       });
-
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const payload = {
-        alt: form.values.username || 'Profile image',
-      };
-      formData.append('_payload', JSON.stringify(payload));
-
-      const apiUrl = import.meta.env.VITE_PAYLOAD_API_URL;
-      const token = await firebaseUser?.getIdToken();
-      const response = await fetch(`${apiUrl}/api/media`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Image upload response error:', errorText);
-        throw new Error(`Image upload failed with status ${response.status}: ${errorText}`);
-      }
-
-      const responseData = await response.json();
-      if (responseData && responseData.doc.id) {
-        notifications.update({
-          id: 'image-upload',
-          color: 'green',
-          title: 'Image Uploaded',
-          message: 'Your image has been uploaded successfully.',
-          icon: <IconCheck size={16} />,
-          loading: false,
-          autoClose: 5000,
-        });
-
-        return responseData.doc.id;
-      } else {
-        throw new Error('Image upload failed: No ID returned');
-      }
+      return id;
     } catch (err) {
-      console.error('Error uploading image:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
-
       notifications.update({
         id: 'image-upload',
         color: 'red',
         title: 'Image Upload Failed',
-        message: errorMessage,
+        message: err instanceof Error ? err.message : 'Failed to upload image',
         icon: <IconX size={16} />,
         loading: false,
         autoClose: 5000,
       });
-
       throw err;
     }
   };
@@ -185,38 +152,9 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
 
       let imageId = user?.thumbnail?.id || null;
 
-      // Upload image if a new file is selected
+      // Upload image if a new file is selected; the upload shows its own progress and error
       if (imageFile) {
-        try {
-          imageId = await uploadImage(imageFile);
-          if (!imageId) {
-            setError('Failed to upload image');
-            setLoading(false);
-            notifications.update({
-              id: 'form-submit',
-              color: 'red',
-              title: 'Submission Failed',
-              message: 'Failed to upload image',
-              icon: <IconX size={16} />,
-              loading: false,
-              autoClose: 5000,
-            });
-            return;
-          }
-        } catch (err) {
-          setError('Failed to upload image');
-          setLoading(false);
-          notifications.update({
-            id: 'form-submit',
-            color: 'red',
-            title: 'Submission Failed',
-            message: 'Failed to upload image',
-            icon: <IconX size={16} />,
-            loading: false,
-            autoClose: 5000,
-          });
-          return;
-        }
+        imageId = await uploadImage(imageFile);
       }
 
       // Prepare JSON data for profile update
@@ -228,13 +166,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       }
 
       // Make the request to update the profile
-      const response = await makeRequest(`/api/users/${user.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jsonData),
-      });
+      await makeRequest(`/api/users/${user.id}`, { method: 'PATCH', body: jsonData });
 
       // Update notification for success
       notifications.update({
@@ -251,13 +183,15 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       window.location.reload();
     } catch (err) {
       console.error('Error submitting form:', err);
-      setError('Failed to save profile. Please try again.');
+      const message =
+        err instanceof Error ? err.message : 'Failed to save profile. Please try again.';
+      setError(message);
 
       notifications.update({
         id: 'form-submit',
         color: 'red',
         title: 'Submission Failed',
-        message: 'Failed to save profile. Please try again.',
+        message,
         icon: <IconX size={16} />,
         loading: false,
         autoClose: 5000,

@@ -37,6 +37,7 @@ import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
 import { useOpenSpaceImport } from '@/hooks/useOpenSpaceImport';
 import { Item as ItemType, Tag, Version } from '@/types/items';
 import { User } from '@/types/users';
+import { apiFetch, ApiError, apiUrl } from '@/utils/api';
 import { getLicenseUrl } from '@/utils/licenseUtils';
 import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
 import { linkify } from '@/utils/textUtils';
@@ -60,32 +61,18 @@ const ItemDetailPage: React.FC = () => {
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const headers: Record<string, string> = {};
-        if (user) {
-          const token = await user.getIdToken();
-          headers.Authorization = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${import.meta.env.VITE_PAYLOAD_API_URL}/api/items/${id}`, {
-          headers,
-        });
-        if (!response.ok) {
-          if (response.status === 404 || response.status === 403) {
-            setError(
-              "This item doesn't exist, is unpublished, or you don't have permission to view it."
-            );
-          } else {
-            setError('Failed to load item. Please try again later.');
-          }
-          return;
-        }
-        const data = await response.json();
-        console.log(data);
+        const data = await apiFetch<ItemType>(`/api/items/${id}`, { user });
         setItem(data);
         setSelectedVersion(data.currentVersion || null);
         setFavorites(data.favoritedBy || []);
       } catch (err) {
-        setError('Failed to load item. Please try again later.');
+        if (err instanceof ApiError && (err.status === 404 || err.status === 403)) {
+          setError(
+            "This item doesn't exist, is unpublished, or you don't have permission to view it."
+          );
+        } else {
+          setError('Failed to load item. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -96,7 +83,7 @@ const ItemDetailPage: React.FC = () => {
 
   const handleFavorite = async () => {
     try {
-      const response = await makeRequest(`/api/items/${id}/favorite`, {
+      const response = await makeRequest<{ favoritedBy: User[] }>(`/api/items/${id}/favorite`, {
         method: 'POST',
       });
       setFavorites(response.favoritedBy);
@@ -115,7 +102,7 @@ const ItemDetailPage: React.FC = () => {
       navigate('/items');
     } catch (err) {
       console.error('Failed to delete item:', err);
-      setError('Failed to delete item. Please try again later.');
+      setError(err instanceof Error ? err.message : 'Failed to delete item.');
     }
   };
 
@@ -181,7 +168,7 @@ const ItemDetailPage: React.FC = () => {
                 <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
                   {displayData.image?.url ? (
                     <Image
-                      src={`${import.meta.env.VITE_PAYLOAD_API_URL}/${displayData.image.url}`}
+                      src={apiUrl(displayData.image.url)}
                       alt={displayData.title}
                       fit="contain"
                       style={{ maxHeight: '350px', display: 'block' }}
@@ -429,9 +416,7 @@ const ItemDetailPage: React.FC = () => {
                     <Button
                       component="a"
                       href={
-                        displayData.assetBundle?.url
-                          ? `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle.url}`
-                          : undefined
+                        displayData.assetBundle?.url ? apiUrl(displayData.assetBundle.url) : undefined
                       }
                       download={displayData.assetBundle?.filename || true}
                       variant="light"
@@ -451,8 +436,9 @@ const ItemDetailPage: React.FC = () => {
                         leftSection={<IconFileImport size={14} />}
                         disabled={!displayData.assetBundle?.url}
                         onClick={() =>
+                          displayData.assetBundle?.url &&
                           importToOpenSpace(
-                            `${import.meta.env.VITE_PAYLOAD_API_URL}${displayData.assetBundle?.url}`,
+                            apiUrl(displayData.assetBundle.url),
                             displayData.type,
                             displayData.assetBundle?.filename,
                             displayData.assetBundle?.entryPath,
