@@ -30,7 +30,7 @@ import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
 import { trackItem } from '@/utils/trackItem';
 import { ItemTypePlaceholder } from './ItemTypeIcon';
 import { User } from '../types/users';
-import { convertLinksToHtml } from '../utils/textUtils';
+import { linkify } from '../utils/textUtils';
 
 interface ItemProps {
   image: {
@@ -226,8 +226,9 @@ const Item: React.FC<ItemProps> = ({
           size="xs"
           c={colorScheme === 'dark' ? theme.colors.gray[4] : theme.colors.gray[7]}
           lineClamp={2}
-          dangerouslySetInnerHTML={{ __html: convertLinksToHtml(description) }}
-        />
+        >
+          {linkify(description)}
+        </Text>
         </div>
         
 

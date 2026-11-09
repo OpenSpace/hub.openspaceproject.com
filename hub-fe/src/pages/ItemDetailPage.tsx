@@ -39,7 +39,7 @@ import { Item as ItemType, Tag, Version } from '@/types/items';
 import { User } from '@/types/users';
 import { getLicenseUrl } from '@/utils/licenseUtils';
 import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
-import { convertLinksToHtml } from '@/utils/textUtils';
+import { linkify } from '@/utils/textUtils';
 import { trackItem } from '@/utils/trackItem';
 
 const ItemDetailPage: React.FC = () => {
@@ -277,8 +277,9 @@ const ItemDetailPage: React.FC = () => {
                 <Text
                   size="sm"
                   c={colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[2]}
-                  dangerouslySetInnerHTML={{ __html: convertLinksToHtml(displayData.description) }}
-                />
+                >
+                  {linkify(displayData.description)}
+                </Text>
               </Card>
 
               <BundleContents
