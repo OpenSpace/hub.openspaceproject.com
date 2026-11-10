@@ -35,6 +35,7 @@ import { useOpenSpaceImport } from '@/hooks/useOpenSpaceImport';
 import { ItemDetail, VersionWithFiles } from '@/types/items';
 import { UserRef } from '@/types/users';
 import { apiFetch, ApiError, apiUrl } from '@/utils/api';
+import { formatDate } from '@/utils/dateUtils';
 import { getLicenseUrl } from '@/utils/licenseUtils';
 import { getTagDisplayName, getTagStyle, sortTags } from '@/utils/tagUtils';
 import { linkify } from '@/utils/textUtils';
@@ -311,7 +312,7 @@ const ItemDetailPage: React.FC = () => {
                       Last Update
                     </Text>
                     <Text size="xs" c="var(--hub-color-text)">
-                      {new Date(selectedVersion?.createdAt || item.updatedAt).toLocaleDateString()}
+                      {formatDate(selectedVersion?.createdAt || item.updatedAt)}
                     </Text>
                   </Stack>
                   {showDownloadCounts && (
@@ -356,13 +357,13 @@ const ItemDetailPage: React.FC = () => {
                         ? [
                             {
                               value: item.currentVersion.id,
-                              label: `Version ${item.currentVersion.version} (Latest) (${new Date(item.currentVersion.createdAt).toLocaleDateString()})`,
+                              label: `Version ${item.currentVersion.version} (Latest) (${formatDate(item.currentVersion.createdAt)})`,
                             },
                           ]
                         : []),
                       ...(item.archives || []).map((version) => ({
                         value: version.id,
-                        label: `Version ${version.version} (${new Date(version.createdAt).toLocaleDateString()})`,
+                        label: `Version ${version.version} (${formatDate(version.createdAt)})`,
                       })),
                     ]}
                     size="xs"

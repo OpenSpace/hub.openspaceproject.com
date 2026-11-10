@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Populated } from '../types/items';
 import { User } from '../types/users';
 import { apiFetch, apiUrl } from '../utils/api';
+import { formatDate } from '../utils/dateUtils';
 import { ItemCard, itemCardQuery } from '../utils/itemCardQuery';
 
 const ITEMS_PER_PAGE = 12;
@@ -329,7 +330,7 @@ function ProfileContent() {
               Member Since
             </Text>
             <Text c="var(--hub-color-dimmed)">
-              {new Date(profileData?.createdAt || '').toLocaleDateString()}
+              {formatDate(profileData?.createdAt)}
             </Text>
           </div>
         </Stack>
