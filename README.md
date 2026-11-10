@@ -98,9 +98,9 @@ Before going live:
    then `npm run build` at the repo root. This builds the frontend (pointed at
    `https://hub.openspaceproject.com` by `hub-fe/.env.production`), copies it into
    `hub-be/public/` and builds the backend
-2. `pm2 start npm --name openspace-hub -- start` at the repo root runs it on port 3000 (`pm2 save`
+2. `pm2 start deploy/ecosystem.config.cjs` at the repo root runs it on port 3000 (`pm2 save`
    and `pm2 startup` once, so it comes back after a reboot). After pulling changes:
-   `npm ci && npm run build && pm2 restart openspace-hub`
+   `npm ci && npm run build && pm2 reload deploy/ecosystem.config.cjs`
 3. Point Apache at it with [deploy/apache-hub.conf](deploy/apache-hub.conf), which lists the
    setup commands, including the Let's Encrypt certificate
 
