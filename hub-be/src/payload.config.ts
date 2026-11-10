@@ -18,7 +18,7 @@ import { clientIp, rateLimiter, tooManyRequests } from './abuseLimits'
 import { SIGNIN_DISABLED_MESSAGE, signinEnabled } from './Access'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import { userFolderAdapter } from './storage/userFolders'
-import { NAME_MAX_LENGTH, USERNAME_MAX_LENGTH } from './validation/textFields'
+import { NAME_MAX_LENGTH, USERNAME_MAX_LENGTH, usernameKey } from './validation/textFields'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -85,11 +85,10 @@ const emailLocalPart = (email?: string) => email?.split('@')[0] ?? ''
 const registerLimit = rateLimiter(60, 60_000)
 
 // A free username for a new account, from its name or email: "Jane Doe" -> "jane-doe",
-// then "jane-doe-2", ... if that is taken (usernames are unique)
+// then "jane-doe-2", ... if that is taken (usernames are unique, ignoring case)
 const uniqueUsername = async (payload: Payload, source: string) => {
   const base =
-    source
-      .toLowerCase()
+    usernameKey(source)
       .replace(/[^a-z0-9._-]+/g, '-')
       // Leave room for a "-<n>" suffix
       .slice(0, USERNAME_MAX_LENGTH - 7)
@@ -98,7 +97,8 @@ const uniqueUsername = async (payload: Payload, source: string) => {
     const candidate = n === 1 ? base : `${base}-${n}`
     const { totalDocs } = await payload.count({
       collection: 'users',
-      where: { username: { equals: candidate } },
+      // The stored lowercase copy, so a generated name can't collide with "Jane-Doe"
+      where: { usernameLower: { equals: usernameKey(candidate) } },
     })
     if (totalDocs === 0) return candidate
   }

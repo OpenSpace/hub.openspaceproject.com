@@ -153,6 +153,10 @@ export interface User {
   firebaseUID?: string | null;
   name: string;
   username: string;
+  /**
+   * Lowercased copy of username, kept in sync by a beforeChange hook, used to keep usernames unique without regard to case.
+   */
+  usernameLower?: string | null;
   thumbnail?: (string | null) | Media;
   link?: string | null;
   contactEmail?: string | null;
@@ -442,6 +446,7 @@ export interface UsersSelect<T extends boolean = true> {
   firebaseUID?: T;
   name?: T;
   username?: T;
+  usernameLower?: T;
   thumbnail?: T;
   link?: T;
   contactEmail?: T;

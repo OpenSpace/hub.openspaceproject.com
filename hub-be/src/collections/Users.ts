@@ -8,9 +8,38 @@ import {
 import { deleteUserContent, exportUserData } from '@/accounts/userData'
 import { apiError } from '@/apiError'
 import { verifyFirebaseToken } from '@/payload.config'
-import { NAME_MAX_LENGTH, validateLink, validateUsername } from '@/validation/textFields'
+import {
+  NAME_MAX_LENGTH,
+  usernameKey,
+  validateLink,
+  validateUsername,
+} from '@/validation/textFields'
 import { withCors } from '@/withCors'
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Validate } from 'payload'
+
+// The format rules, plus uniqueness: `unique` on the field only catches usernames that match
+// exactly, so the stored lowercase copy is what is compared here. The unique index on that
+// copy is the backstop; this check runs first so the error names `username`, the field the
+// profile form actually has
+const validateFreeUsername: Validate<string | null | undefined> = async (value, options) => {
+  const format = validateUsername(value, options)
+  if (format !== true) {
+    return format
+  }
+  // The admin panel runs field validations in the browser as well, where there is no database
+  // to ask; the same save is validated again on the server
+  const payload = options.req?.payload
+  if (!payload || typeof value !== 'string') {
+    return true
+  }
+  const key = { usernameLower: { equals: usernameKey(value) } }
+  const { totalDocs } = await payload.count({
+    collection: 'users',
+    where: options.id ? { and: [key, { id: { not_equals: options.id } }] } : key,
+    req: options.req,
+  })
+  return totalDocs === 0 ? true : 'That username is already taken.'
+}
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -47,6 +76,24 @@ export const Users: CollectionConfig = {
         return data
       },
       requireOwnUploads({ thumbnail: 'media' }),
+      ({ data }) => {
+        // Keep the lowercased copy that `username`'s uniqueness is checked against in sync.
+        // `data` holds the whole document here, so this also runs when something else changes
+        if (typeof data?.username === 'string') {
+          data.usernameLower = usernameKey(data.username)
+        }
+        return data
+      },
+    ],
+    beforeValidate: [
+      ({ data }) => {
+        // Trim before the field rules are checked, so a stray space pasted into the profile
+        // form isn't an error the user can't see
+        if (typeof data?.username === 'string') {
+          data.username = data.username.trim()
+        }
+        return data
+      },
     ],
     beforeDelete: [deleteUserContent],
   },
@@ -159,7 +206,19 @@ export const Users: CollectionConfig = {
       type: 'text',
       required: true,
       unique: true,
-      validate: validateUsername,
+      validate: validateFreeUsername,
+    },
+    {
+      name: 'usernameLower',
+      // `unique` indexes the field as well
+      type: 'text',
+      unique: true,
+      admin: {
+        readOnly: true,
+        description:
+          'Lowercased copy of username, kept in sync by a beforeChange hook, used to keep usernames unique without regard to case.',
+        hidden: true,
+      },
     },
     {
       name: 'thumbnail',

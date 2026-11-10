@@ -1,8 +1,10 @@
 // Migration 0: brings existing items and users in line with the field rules added in
-// hub-be/src/validation/textFields.ts (lengths, username format, http(s)-only links). Payload
-// checks every field on each save, so until this has run, items and profiles that break a rule
-// can't be saved at all, also not by the hub itself (e.g. adding a new item to its author's list).
-// Run it before (or right after) deploying that change.
+// hub-be/src/validation/textFields.ts (lengths, no invisible characters in usernames,
+// http(s)-only links), and fills in `usernameLower`, the lowercase copy that keeps usernames
+// unique without regard to case. Payload checks every field on each save, so until this has run,
+// items and profiles that break a rule can't be saved at all, also not by the hub itself (e.g.
+// adding a new item to its author's list), and the unique index on `usernameLower` can't be
+// built while it is missing on every user. Run it BEFORE deploying that change.
 //
 // From the repository root, with hub-be's dependencies installed:
 //   node scripts/migration/0-limit-field-lengths.js            fix what it can, ask about the rest
@@ -28,11 +30,21 @@ const DESCRIPTION_MAX_LENGTH = 5000
 const NAME_MAX_LENGTH = 100
 const USERNAME_MAX_LENGTH = 40
 const LINK_MAX_LENGTH = 500
-const USERNAME_PATTERN = /^[a-z0-9_](?:[a-z0-9._-]*[a-z0-9_])?$/
+// Control characters, bidi overrides, zero-width spaces, unassigned code points, and any
+// whitespace other than a plain space: invisible on screen, so two accounts could look like
+// the same person. Everything else is a valid username
+const INVISIBLE_PATTERN = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}]|[^\S ]/u
 const LINK_PATTERN = /^https?:\/\/[^\s/?#]+[^\s]*$/i
 
+// Same as usernameKey() in hub-be/src/validation/textFields.ts
+const usernameKey = (value) => value.normalize('NFKC').toLowerCase()
+
 const isValidUsername = (value) =>
-  typeof value === 'string' && value.length <= USERNAME_MAX_LENGTH && USERNAME_PATTERN.test(value)
+  typeof value === 'string' &&
+  value.length > 0 &&
+  value.length <= USERNAME_MAX_LENGTH &&
+  value === value.trim() &&
+  !INVISIBLE_PATTERN.test(value)
 const isValidLink = (value) =>
   !value || (typeof value === 'string' && value.length <= LINK_MAX_LENGTH && LINK_PATTERN.test(value))
 const fitsIn = (max) => (value) => value.length > 0 && value.length <= max
@@ -49,17 +61,16 @@ const shorten = (value, max) => {
 }
 
 // Same as uniqueUsername() in hub-be/src/payload.config.ts: "Jane Doe" -> "jane-doe", then
-// "jane-doe-2", ... if that is taken
+// "jane-doe-2", ... if that key is taken
 const freeUsername = (source, taken) => {
   const base =
-    String(source ?? '')
-      .toLowerCase()
+    usernameKey(String(source ?? ''))
       .replace(/[^a-z0-9._-]+/g, '-')
       .slice(0, USERNAME_MAX_LENGTH - 7)
       .replace(/^[-.]+|[-.]+$/g, '') || 'user'
   for (let n = 1; ; n++) {
     const candidate = n === 1 ? base : `${base}-${n}`
-    if (!taken.has(candidate)) return candidate
+    if (!taken.has(usernameKey(candidate))) return candidate
   }
 }
 
@@ -103,27 +114,59 @@ const findItemProblems = async (db) => {
   })
 }
 
+// The problems of all users, plus the `usernameLower` values that are missing or stale.
+// Usernames are settled in one pass, so that a rename (and the generated name it gets) can't
+// collide with a username that is kept, nor with another rename
 const findUserProblems = async (db) => {
   const users = await db
     .collection('users')
-    .find({}, { projection: { name: 1, username: 1, link: 1 } })
+    .find({}, { projection: { name: 1, username: 1, usernameLower: 1, link: 1 } })
     .toArray()
-  const taken = new Set(users.map((user) => user.username).filter(Boolean))
 
-  return users.flatMap((user) => {
+  const problems = []
+  // Every username key settled so far, mapped to the username holding it so that the message
+  // of a case collision can name it
+  const taken = new Map()
+  // What each user's username ends up as, which decides its `usernameLower`
+  const planned = []
+
+  for (const user of users) {
     const label = `User ${user._id} ${show(user.username, 60)}`
     const base = { collection: 'users', doc: user, label }
-    const problems = tooLong('users', user, label, 'name', NAME_MAX_LENGTH)
+    problems.push(...tooLong('users', user, label, 'name', NAME_MAX_LENGTH))
 
-    if (!isValidUsername(user.username)) {
-      const fixed = freeUsername(user.username || user.name, taken)
-      taken.add(fixed)
-      problems.push({ ...base, field: 'username', problem: 'breaks the username rules', fixed })
+    const trimmed = typeof user.username === 'string' ? user.username.trim() : ''
+    let username = trimmed
+    if (!isValidUsername(trimmed)) {
+      username = freeUsername(trimmed || user.name, taken)
+      problems.push({
+        ...base,
+        field: 'username',
+        problem: 'breaks the username rules',
+        fixed: username,
+      })
+    } else if (taken.has(usernameKey(trimmed))) {
+      username = freeUsername(trimmed, taken)
+      problems.push({
+        ...base,
+        field: 'username',
+        problem: `is ${show(taken.get(usernameKey(trimmed)))} apart from case, and usernames are unique`,
+        fixed: username,
+      })
+    } else if (trimmed !== user.username) {
+      problems.push({
+        ...base,
+        field: 'username',
+        problem: 'has a space at the start or end',
+        fixed: username,
+      })
     }
+    taken.set(usernameKey(username), username)
+    planned.push({ user, username })
 
     if (!isValidLink(user.link)) {
-      const trimmed = String(user.link).trim()
-      const fixed = trimmed ? withScheme(trimmed) : ''
+      const trimmedLink = String(user.link).trim()
+      const fixed = trimmedLink ? withScheme(trimmedLink) : ''
       problems.push(
         isValidLink(fixed)
           ? { ...base, field: 'link', problem: 'is not a full web address', fixed }
@@ -137,8 +180,18 @@ const findUserProblems = async (db) => {
             },
       )
     }
-    return problems
-  })
+  }
+
+  // Only where it is missing or out of date, so running this again changes nothing
+  const lowerUpdates = []
+  for (const { user, username } of planned) {
+    const usernameLower = usernameKey(username)
+    if (user.usernameLower !== usernameLower) {
+      lowerUpdates.push({ _id: user._id, usernameLower })
+    }
+  }
+
+  return { problems, lowerUpdates }
 }
 
 // The new value for a problem, or undefined to leave it as it is for now
@@ -184,8 +237,9 @@ const main = async () => {
   try {
     await client.connect()
     const db = client.db()
-    const problems = [...(await findItemProblems(db)), ...(await findUserProblems(db))]
-    if (!problems.length) {
+    const { problems: userProblems, lowerUpdates } = await findUserProblems(db)
+    const problems = [...(await findItemProblems(db)), ...userProblems]
+    if (!problems.length && !lowerUpdates.length) {
       console.log('Nothing to change: all items and users follow the rules.')
       return
     }
@@ -200,8 +254,22 @@ const main = async () => {
       rl = readline.createInterface({ input: process.stdin, output: process.stdout })
     }
 
-    console.log(`${problems.length} value(s) break the new rules${options.dryRun ? ' (dry run, nothing is saved)' : ''}.\n`)
+    const suffix = options.dryRun ? ' (dry run, nothing is saved)' : ''
+    if (lowerUpdates.length) {
+      console.log(
+        `${lowerUpdates.length} user(s) need their lowercase username copy filled in${suffix}.`,
+      )
+    }
+    if (problems.length) {
+      console.log(`${problems.length} value(s) break the new rules${suffix}.`)
+    }
+    console.log('')
+
     const changes = new Map()
+    // The copy follows the username, so a username decided below overwrites this
+    for (const { _id, usernameLower } of lowerUpdates) {
+      changes.set(`users:${_id}`, { collection: 'users', _id, set: { usernameLower } })
+    }
     let skipped = 0
     for (const problem of problems) {
       const value = await decide(problem, options, rl)
@@ -215,6 +283,9 @@ const main = async () => {
       change.set[problem.field] = value
       // Items sort by this lowercased copy (see the beforeChange hook in Items.ts)
       if (collection === 'items' && problem.field === 'title') change.set.titleLower = value.toLowerCase()
+      // Usernames are unique by this copy (see the beforeChange hook in Users.ts)
+      if (collection === 'users' && problem.field === 'username')
+        change.set.usernameLower = usernameKey(value)
       changes.set(key, change)
     }
 

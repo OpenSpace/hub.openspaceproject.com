@@ -9,6 +9,7 @@ import {
   readZipEntries,
 } from '@/collections/AssetBundles'
 import type { Item, Tag } from '@/payload-types'
+import { usernameKey } from '@/validation/textFields'
 import { toMinorVersion } from '@/validation/openspaceVersion'
 import { defaultSiteConfig } from './seed-global-config'
 
@@ -205,14 +206,20 @@ const ingestData = async (payload: Payload): Promise<IngestReport> => {
     return bundle.id
   }
 
-  // 1. Users, matched to existing ones by email or username so re-runs don't duplicate them
+  // 1. Users, matched to existing ones by email or username (ignoring case, like the
+  // uniqueness rule) so re-runs don't duplicate them
   const userIdByOldId = new Map<string, string>()
   const userIdByUsername = new Map<string, string>()
   for (const oldUser of oldUsers ?? []) {
     const email = oldUser.email?.trim().toLowerCase()
     const existing = await payload.find({
       collection: 'users',
-      where: { or: [{ email: { equals: email } }, { username: { equals: oldUser.username } }] },
+      where: {
+        or: [
+          { email: { equals: email } },
+          { usernameLower: { equals: usernameKey(oldUser.username) } },
+        ],
+      },
       depth: 0,
       limit: 1,
     })
@@ -240,18 +247,18 @@ const ingestData = async (payload: Payload): Promise<IngestReport> => {
       }
     }
     userIdByOldId.set(oldUser._id, userId)
-    userIdByUsername.set(oldUser.username, userId)
+    userIdByUsername.set(usernameKey(oldUser.username), userId)
   }
 
   // Item authors are embedded copies; find the user by username, or make a placeholder
   const authorId = async (author: OldItem['author']) => {
-    const known = userIdByUsername.get(author.username)
+    const known = userIdByUsername.get(usernameKey(author.username))
     if (known) {
       return known
     }
     const existing = await payload.find({
       collection: 'users',
-      where: { username: { equals: author.username } },
+      where: { usernameLower: { equals: usernameKey(author.username) } },
       depth: 0,
       limit: 1,
     })
@@ -272,7 +279,7 @@ const ingestData = async (payload: Payload): Promise<IngestReport> => {
       userId = user.id
       report.placeholderUsers.push(author.username)
     }
-    userIdByUsername.set(author.username, userId)
+    userIdByUsername.set(usernameKey(author.username), userId)
     return userId
   }
 
