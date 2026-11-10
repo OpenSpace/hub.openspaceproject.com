@@ -24,7 +24,7 @@ Then, from the repo root:
    cd hub-be && yarn make-admin you@example.com
    ```
 4. Optional: import the items from the old hub with `cd hub-be && yarn seed`. It needs the old hub's
-   data export (ask a maintainer) in a folder called `injest` in `hub-be`, and creates the items with their images and files,
+   data export (ask a maintainer) in a folder called `ingest` in `hub-be`, and creates the items with their images and files,
    and their authors (with placeholder emails that are replaced when they first sign in).
    To copy an existing hub instead, restore its `yarn backup` (see `hub-be/src/scripts/backup.ts`)
 
@@ -105,7 +105,7 @@ To try a production build locally, build the frontend with
 
 ### Backend (hub-be)
 - The backend is a Next.js app using PayloadCMS
-- For S3 asset and media updates, uncomment the relevant section in `payload.config.ts`, otherwise media uploads and asset-bundles will be saved to disk 
+- Media uploads and asset bundles are saved to disk, in a folder per uploader
 - Ensure proper credentials are set in `.env`
 - Give each server its own random `PAYLOAD_SECRET`: `yarn generate:payload-secret --write` puts one in `.env` (or run it without `--write` to print one). The backend refuses to start without it
 - Follow PayloadCMS deployment instructions in their [documentation](https://payloadcms.com/docs/production/deployment)
@@ -117,7 +117,6 @@ To try a production build locally, build the frontend with
 
 ## Additional Notes
 
-- For S3 configuration, check the commented section in `payload.config.ts`
 - Make sure to have all required environment variables in `.env`
 - The frontend can be deployed separately from the backend
 - Both applications can live side by side or on different servers

@@ -1,6 +1,6 @@
 import { getPayload } from 'payload'
 import seedTags from './seed-tags'
-import injestData from './injest-data'
+import ingestData from './ingest-data'
 import configPromise from '@payload-config'
 import seedGlobalConfig from './seed-global-config'
 
@@ -23,7 +23,7 @@ const runSeeds = async () => {
     console.log('Seeding tags...')
     await seedTags(payload)
     console.log('Importing old Hub data...')
-    const report = await injestData(payload)
+    const report = await ingestData(payload)
 
     console.log(
       `\nUsers: ${report.usersCreated} created, ${report.usersExisting} already existed` +

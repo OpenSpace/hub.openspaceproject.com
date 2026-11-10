@@ -1,10 +1,8 @@
 import '@mantine/core/styles.css';
 
-import React from 'react';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { TopMenuBar } from './components/TopMenuBar';
 import { AuthProvider } from './contexts/AuthContext';
 import { Router } from './Router';
 

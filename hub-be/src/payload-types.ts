@@ -168,7 +168,6 @@ export interface User {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
-  password?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -186,6 +185,7 @@ export interface User {
         expiresAt: string;
       }[]
     | null;
+  password?: string | null;
   collection: 'users';
 }
 /**
@@ -449,7 +449,6 @@ export interface UsersSelect<T extends boolean = true> {
   slackHandle?: T;
   items?: T;
   favorites?: T;
-  password?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

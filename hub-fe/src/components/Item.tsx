@@ -18,7 +18,6 @@ import {
   Image,
   Stack,
   Text,
-  Tooltip,
   useMantineTheme,
 } from '@mantine/core';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,8 +44,6 @@ type ItemProps = Pick<
   | 'createdAt'
   | 'favoritedBy'
   | 'tags'
-  | 'currentVersion'
-  | 'archives'
 > & {
   image: {
     url: string;
@@ -71,8 +68,6 @@ const Item: React.FC<ItemProps> = ({
   description,
   id,
   tags,
-  currentVersion,
-  archives,
   assetBundle,
 }) => {
   const theme = useMantineTheme();
@@ -96,7 +91,6 @@ const Item: React.FC<ItemProps> = ({
   };
 
   const isFavorited = favorites.some((f) => f.id === payloadUser?.id);
-  const totalVersions = (archives?.length || 0) + (currentVersion ? 1 : 0);
 
   return (
     <Card

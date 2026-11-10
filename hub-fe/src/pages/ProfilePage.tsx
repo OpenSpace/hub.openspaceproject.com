@@ -391,8 +391,6 @@ function ProfileContent() {
                         createdAt={item.createdAt}
                         favoritedBy={item.favoritedBy}
                         tags={item.tags}
-                        currentVersion={item.currentVersion}
-                        archives={item.archives}
                         image={{
                           url: item.image?.url || '',
                           alt: item.title || 'Item image',
@@ -456,8 +454,6 @@ function ProfileContent() {
                         createdAt={item.createdAt}
                         favoritedBy={item.favoritedBy}
                         tags={item.tags}
-                        currentVersion={item.currentVersion}
-                        archives={item.archives}
                         image={{
                           url: item.image?.url || '',
                           alt: item.title || 'Item image',

@@ -227,10 +227,8 @@ export const AssetBundles: CollectionConfig = {
           if (!(await canUploadRequest(req))) {
             return apiError(UPLOADS_DISABLED_MESSAGE, 403)
           }
-          // const formData = await req.json?.()
           const formData = await req.formData?.()
           const file = formData?.get('file') as File
-          const id = formData?.get('id') as string
           const payload = JSON.parse(formData?.get('_payload') as string)
           const title = payload?.title
           const type = payload?.type

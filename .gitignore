@@ -59,7 +59,7 @@ backup/
 *.old
 
 # Project specific
-hub-be/injest/
+hub-be/ingest/
 hub-be/uploads/
 dist/
 hub-be/dist

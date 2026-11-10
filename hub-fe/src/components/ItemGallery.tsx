@@ -200,8 +200,6 @@ const ItemGallery: React.FC<ItemGalleryProps> = ({
                   filename: item.assetBundle?.filename,
                   entryPath: item.assetBundle?.entryPath,
                 }}
-                currentVersion={item.currentVersion}
-                archives={item.archives}
               />
             ))}
           </SimpleGrid>

@@ -10,7 +10,7 @@ import { apiError } from '@/apiError'
 import { verifyFirebaseToken } from '@/payload.config'
 import { NAME_MAX_LENGTH, validateLink, validateUsername } from '@/validation/textFields'
 import { withCors } from '@/withCors'
-import type { CollectionConfig, PayloadRequest, User } from 'payload'
+import type { CollectionConfig } from 'payload'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -206,17 +206,6 @@ export const Users: CollectionConfig = {
       type: 'join',
       collection: 'items',
       on: 'favoritedBy',
-    },
-    {
-      name: 'password',
-      type: 'text',
-      required: false,
-      // admin: {
-      //   condition: ({ data }) => {
-      //     // Only show in admin UI if user has admin role
-      //     return data?.role?.includes('admin') || false
-      //   },
-      // },
     },
   ],
 }

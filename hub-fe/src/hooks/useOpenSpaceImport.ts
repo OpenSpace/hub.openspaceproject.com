@@ -1,7 +1,6 @@
-// import { useNotifications } from '@mantine/notifications';
 import { createElement } from 'react';
 import { modals } from '@mantine/modals';
-import { notifications, useNotifications } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import { OverwriteFilesList } from '@/components/OverwriteFilesList';
 import { fetchBundleContents } from '@/utils/bundleContents';
 import { trackItem } from '@/utils/trackItem';
@@ -64,8 +63,6 @@ const confirmOverwrite = (files: string[]) =>
   });
 
 export const useOpenSpaceImport = (options: OpenSpaceImportOptions = {}) => {
-  //   const notifications = useNotifications();
-
   const importToOpenSpace = async (
     url: string,
     type: string,
@@ -93,7 +90,6 @@ export const useOpenSpaceImport = (options: OpenSpaceImportOptions = {}) => {
       const dotIndex = filePath.lastIndexOf('.');
       const noextension = dotIndex > 0 ? filePath.substring(0, dotIndex) : filePath;
       const extension = dotIndex > 0 ? filePath.substring(dotIndex).toLowerCase() : '';
-      console.log(`Importing ${type} from ${fullUrl} to OpenSpace as ${filePath}`);
       const tempDir = await openspace.absPath('${TEMPORARY}/');
 
       // Zip file list recorded by the hub at upload. Bundles uploaded before that was added
@@ -184,13 +180,11 @@ export const useOpenSpaceImport = (options: OpenSpaceImportOptions = {}) => {
             const assetPath = scenePath + (entryPath || `${baseName}/${baseName}.asset`);
             plan = andThen(await planUnzip(scenePath), async () => {
               await openspace.asset.add(assetPath);
-              console.log(`Asset added: ${assetPath}`);
             });
           } else if (extension === '.asset' || extension === '.jasset') {
             const absPath = await openspace.absPath('${USER_ASSETS}/' + filePath);
             plan = andThen(planDownload(absPath), async () => {
               await openspace.asset.add(absPath);
-              console.log(`Asset added: ${absPath}`);
             });
           } else {
             throw new Error(`Unsupported asset file type: ${extension || filePath}`);

@@ -1,4 +1,4 @@
-import type { AssetBundle, Item, Media, Version } from '@payload-types';
+import type { AssetBundle, Item, Media } from '@payload-types';
 import type { TagRef } from '@/types/items';
 import type { UserRef } from '@/types/users';
 
@@ -16,8 +16,6 @@ export const itemCardQuery = {
     tags: true,
     image: true,
     assetBundle: true,
-    currentVersion: true,
-    archives: true,
     favoritedBy: true,
     createdAt: true,
     updatedAt: true,
@@ -28,7 +26,6 @@ export const itemCardQuery = {
     // Payload builds `url` from `filename`
     media: { url: true, alt: true, filename: true },
     'asset-bundles': { url: true, filename: true, entryPath: true },
-    versions: { version: true, createdAt: true },
   },
 };
 
@@ -48,7 +45,5 @@ export type ItemCard = Pick<
   tags?: TagRef[] | null;
   image?: Pick<Media, 'id' | 'url' | 'alt' | 'filename'> | null;
   assetBundle?: Pick<AssetBundle, 'id' | 'url' | 'filename' | 'entryPath'> | null;
-  currentVersion?: Pick<Version, 'id' | 'version' | 'createdAt'> | null;
-  archives?: Pick<Version, 'id' | 'version' | 'createdAt'>[] | null;
   favoritedBy?: UserRef[] | null;
 };

@@ -5,8 +5,6 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig, type Payload } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
-// import { registerUserRoute } from './api/register'
-import { headersWithCors } from 'payload'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -18,7 +16,6 @@ import { withCors } from './withCors'
 import { apiError } from './apiError'
 import { clientIp, rateLimiter, tooManyRequests } from './abuseLimits'
 import { SIGNIN_DISABLED_MESSAGE, signinEnabled } from './Access'
-import { s3Storage } from '@payloadcms/storage-s3'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import { userFolderAdapter } from './storage/userFolders'
 import { NAME_MAX_LENGTH, USERNAME_MAX_LENGTH } from './validation/textFields'
@@ -139,28 +136,13 @@ export default buildConfig({
   sharp,
   plugins: [
     // Store uploads in a folder per uploader (<staticDir>/<user id>/<filename>) instead of
-    // one flat folder. Swapping this adapter for s3Storage later keeps the same prefixes
+    // one flat folder
     cloudStoragePlugin({
       collections: {
         media: { adapter: userFolderAdapter },
         'asset-bundles': { adapter: userFolderAdapter },
       },
     }),
-    // s3Storage({
-    //   collections: {
-    //     media: true,
-    //     'asset-bundles': true,
-    //   },
-    //   bucket: process.env.S3_BUCKET || '',
-    //   config: {
-    //     credentials: {
-    //       accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
-    //       secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
-    //     },
-    //     region: process.env.S3_REGION || '',
-    //     // ... Other S3 configuration
-    //   },
-    // }),
   ],
   upload: {
     limits: {

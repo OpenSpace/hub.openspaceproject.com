@@ -29,7 +29,6 @@ import {
 } from '../contexts/AuthContext';
 import { useAuthenticatedRequest } from '../hooks/useAuthenticatedRequest';
 import { Item, ItemDetail } from '../types/items';
-import { link } from 'fs/promises';
 import { apiUrl, uploadFile } from '@/utils/api';
 import { DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/utils/fieldLimits';
 import { ITEM_TYPE_LABELS } from '@/utils/tagUtils';
@@ -95,14 +94,12 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
   );
   const [assetFile, setAssetFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [assetBundleId, setAssetBundleId] = useState<string | null>(item?.assetBundle?.id || null);
   const [showVersionConfirm, setShowVersionConfirm] = useState(false);
   const [pendingSubmitValues, setPendingSubmitValues] = useState<any>(null);
   
   const [filelabel, setFilelabel] = useState<string>('Asset Files');
   const [fileAccepts, setFileAccepts] = useState<string>('Asset Files');
   const [filePlaceholder, setFilePlaceholder] = useState<string>('Upload a file');
-  const [uploadType, setUploadType] = useState<string>(item?.type || 'asset');
 
   const typeOptions = withCurrent(siteConfig?.itemTypes, item?.type).map((type) => ({
     value: type,
@@ -140,8 +137,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
 
   //change the upload portion of the form based on type
   const handleTypeChange = (_value: string | null, option: ComboboxItem | null) => {
-    console.log('2Selected type:', _value);
-    setUploadType(_value ?? '');
     switch (_value) {
       case 'asset':
         setFilelabel('Asset or Zip');
@@ -325,7 +320,6 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
       setPendingSubmitValues(values);
       return;
     }
-    console.log('Submitting form with values:', values);
     // Otherwise proceed with normal submission
     await submitForm(values);
   };
@@ -345,7 +339,7 @@ export function ItemForm({ item, isEdit = false }: ItemFormProps) {
         withCloseButton: false,
       });
 
-      let currentAssetBundleId = assetBundleId;
+      let currentAssetBundleId = item?.assetBundle?.id || null;
       let imageId = item?.image?.id || null;
 
       // Upload new files first; each upload shows its own progress and error

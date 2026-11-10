@@ -1,7 +1,5 @@
-import { IconBrandGithub, IconBrandSlack } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { Anchor, Container, Group, Stack, Text } from '@mantine/core';
-import { ThemeToggle } from './ThemeToggle';
 
 const Footer = () => {
   return (
@@ -25,7 +23,6 @@ const Footer = () => {
           <Anchor component={Link} to="/privacy" size="xs">
             Privacy
           </Anchor>
-          {/* <ThemeToggle /> */}
         </Group>
 
       </Group>

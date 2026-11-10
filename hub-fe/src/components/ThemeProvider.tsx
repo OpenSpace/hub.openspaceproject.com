@@ -1,5 +1,4 @@
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
-import { useColorScheme } from '@mantine/hooks';
 import { cssVariablesResolver, theme } from '@/theme';
 
 interface ThemeProviderProps {

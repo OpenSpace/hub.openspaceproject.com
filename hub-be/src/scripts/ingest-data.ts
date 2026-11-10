@@ -13,7 +13,7 @@ import { toMinorVersion } from '@/validation/openspaceVersion'
 import { defaultSiteConfig } from './seed-global-config'
 
 // Imports items, users and their files exported from the old OpenSpace Hub
-// (hub.openspaceproject.com). Put these in INJEST_DIR (default hub-be/injest/):
+// (hub.openspaceproject.com). Put these in INGEST_DIR (default hub-be/ingest/):
 //   hubitems.json  mongoexport of the `hubitems` collection (JSON lines or --jsonArray)
 //   users.json     mongoexport of the `users` collection (optional, but needed for real emails)
 //   users/...      the old server's uploads/ folder contents; item and image paths are relative
@@ -63,7 +63,7 @@ export interface IngestReport {
   warnings: string[]
 }
 
-const INJEST_DIR = process.env.INJEST_DIR || path.join(process.cwd(), 'injest')
+const INGEST_DIR = process.env.INGEST_DIR || path.join(process.cwd(), 'ingest')
 
 const IMAGE_MIME_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -91,7 +91,7 @@ const unwrap = (value: any): any => {
 
 // A mongoexport file as either JSON lines or a JSON array; [] if the file doesn't exist
 const readExport = <T>(fileName: string): T[] | undefined => {
-  const filePath = path.join(INJEST_DIR, fileName)
+  const filePath = path.join(INGEST_DIR, fileName)
   if (!fs.existsSync(filePath)) {
     return undefined
   }
@@ -112,7 +112,7 @@ const parseDate = (value: string | undefined) => {
 // anyone log in as them through Payload's email/password login
 const randomPassword = () => randomBytes(32).toString('hex')
 
-const injestData = async (payload: Payload): Promise<IngestReport> => {
+const ingestData = async (payload: Payload): Promise<IngestReport> => {
   const report: IngestReport = {
     usersCreated: 0,
     usersExisting: 0,
@@ -126,7 +126,7 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
 
   const items = readExport<OldItem>('hubitems.json')
   if (!items) {
-    throw new Error(`No hubitems.json in ${INJEST_DIR}`)
+    throw new Error(`No hubitems.json in ${INGEST_DIR}`)
   }
   const oldUsers = readExport<OldUser>('users.json')
   if (!oldUsers) {
@@ -134,7 +134,7 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
   }
 
   const readFile = (relativePath: string | undefined) => {
-    const filePath = relativePath && path.join(INJEST_DIR, relativePath)
+    const filePath = relativePath && path.join(INGEST_DIR, relativePath)
     if (!filePath || !fs.existsSync(filePath)) {
       report.missingFiles.push(relativePath || '(no path)')
       return undefined
@@ -448,4 +448,4 @@ const injestData = async (payload: Payload): Promise<IngestReport> => {
   return report
 }
 
-export default injestData
+export default ingestData

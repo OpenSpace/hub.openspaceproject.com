@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { IconLogout, IconPlug, IconUser, IconUpload } from '@tabler/icons-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { IconLogout, IconUser, IconUpload } from '@tabler/icons-react';
+import { Link } from 'react-router-dom';
 import {
   Avatar,
   Burger,
@@ -37,10 +37,8 @@ const noteColor = 'light-dark(var(--mantine-color-dark-2), var(--mantine-color-g
 export function TopMenuBar() {
   const { user, payloadUser, logout, uploadsEnabled, signinEnabled } = useAuth();
   const theme = useMantineTheme();
-  const navigate = useNavigate();
   const [opened, setOpened] = useState(false);
   const [modalOpened, setModalOpened] = useState(false);
-  const [uploadModalOpened, setUploadModalOpened] = useState(false);
   const [modalMode, setModalMode] = useState<'login' | 'signup'>('login');
 
   const toggleNavbar = () => setOpened((o) => !o);
@@ -52,14 +50,6 @@ export function TopMenuBar() {
     setModalOpened(true);
   };
   const closeModal = () => setModalOpened(false);
-  const openUploadModal = () => {
-    if (!user) {
-      openModal('login');
-    } else {
-      navigate('/items/new');
-    }
-  };
-  const closeUploadModal = () => setUploadModalOpened(false);
 
   const displayName = () => {
     if (!user) return '';

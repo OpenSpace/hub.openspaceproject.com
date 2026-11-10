@@ -10,8 +10,6 @@ import {
   Where,
 } from 'payload'
 import { idOf } from '@/accounts/userData'
-import { User } from '../payload-types'
-// import { Access } from "payload/config";
 
 export const isAdmin: Access = ({ req: { user } }) => {
   // Return true or false based on if the user has an admin role

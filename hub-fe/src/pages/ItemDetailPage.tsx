@@ -13,7 +13,6 @@ import {
   ActionIcon,
   Anchor,
   Badge,
-  Box,
   Button,
   Card,
   Container,
@@ -26,7 +25,6 @@ import {
   Stack,
   Text,
   Title,
-  Tooltip,
   useMantineTheme,
 } from '@mantine/core';
 import { BundleContents } from '@/components/BundleContents';
@@ -453,11 +451,3 @@ const ItemDetailPage: React.FC = () => {
 };
 
 export default ItemDetailPage;
-
-const styles = {
-  authorLink: {
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
-};
