@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.yarn/*
+!.yarn/releases
 
 # Environment variables
 .env

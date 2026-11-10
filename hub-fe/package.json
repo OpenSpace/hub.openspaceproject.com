@@ -9,14 +9,14 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "npm run eslint && npm run stylelint",
+    "lint": "yarn eslint && yarn stylelint",
     "eslint": "eslint . --cache",
     "stylelint": "stylelint '**/*.css' --cache",
     "prettier": "prettier --check \"**/*.{ts,tsx}\"",
     "prettier:write": "prettier --write \"**/*.{ts,tsx}\"",
     "vitest": "vitest run",
     "vitest:watch": "vitest",
-    "test": "npm run typecheck && npm run prettier && npm run lint && npm run vitest && npm run build"
+    "test": "yarn typecheck && yarn prettier && yarn lint && yarn vitest && yarn build"
   },
   "dependencies": {
     "@mantine/core": "7.17.2",
@@ -66,6 +66,5 @@
     "vite": "^6.2.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9"
-  },
-  "packageManager": "yarn@4.7.0"
+  }
 }

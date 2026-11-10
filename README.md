@@ -2,7 +2,7 @@
 
 ## Development Setup
 
-You need Node 22 (22.23.4+) or 24 (24.22.1+), Yarn (`corepack enable`; the frontend brings its own Yarn 4) and
+You need Node 22 (22.23.4+) or 24 (24.22.1+), Yarn (`corepack enable`, or any installed Yarn: the repo brings its own Yarn 4) and
 MongoDB 8.0 running locally (see [Installing MongoDB](#installing-mongodb)). Three files hold settings and keys that aren't in git; copy them from
 an existing setup, or ask a maintainer:
 
@@ -14,7 +14,7 @@ an existing setup, or ask a maintainer:
 
 Then, from the repo root:
 
-1. `yarn install:all` installs the root's tools, the frontend and the backend
+1. `yarn install` installs the root's tools, the frontend and the backend (Yarn workspaces, one `yarn.lock`)
 2. `yarn dev` starts both: the hub at `localhost:5173`, the backend and admin panel at
    `localhost:3000`. On an empty database the backend adds the default site settings
    (OpenSpace versions, item types, licenses) and their tags when it starts
@@ -90,7 +90,7 @@ Before going live:
 #### With pm2
 
 0. Install MongoDB 8.0 and start it as a service ([Installing MongoDB](#installing-mongodb))
-1. With `hub-fe/.env` (Firebase settings) and `hub-be/.env` in place, run `yarn install:all`,
+1. With `hub-fe/.env` (Firebase settings) and `hub-be/.env` in place, run `yarn install`,
    then `yarn build` at the repo root. This builds the frontend (pointed at
    `https://hub.openspaceproject.com` by `hub-fe/.env.production`), copies it into
    `hub-be/public/` and builds the backend
