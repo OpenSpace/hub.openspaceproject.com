@@ -9,14 +9,14 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "yarn eslint && yarn stylelint",
+    "lint": "npm run eslint && npm run stylelint",
     "eslint": "eslint . --cache",
-    "stylelint": "stylelint '**/*.css' --cache",
+    "stylelint": "stylelint \"**/*.css\" --cache",
     "prettier": "prettier --check \"**/*.{ts,tsx}\"",
     "prettier:write": "prettier --write \"**/*.{ts,tsx}\"",
     "vitest": "vitest run",
     "vitest:watch": "vitest",
-    "test": "yarn typecheck && yarn prettier && yarn lint && yarn vitest && yarn build"
+    "test": "npm run typecheck && npm run prettier && npm run lint && npm run vitest && npm run build"
   },
   "dependencies": {
     "@mantine/core": "9.8.0",

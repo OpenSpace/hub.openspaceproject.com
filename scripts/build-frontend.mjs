@@ -14,8 +14,8 @@ if (!apiUrl || !/^https?:\/\//.test(apiUrl)) {
 }
 
 console.log(`Building the frontend for ${apiUrl}`)
-// A shell is needed to find yarn on Windows
-const build = spawnSync('yarn build', {
+// A shell is needed to find npm on Windows
+const build = spawnSync('npm run build', {
   cwd: path.join(root, 'hub-fe'),
   env: { ...process.env, VITE_PAYLOAD_API_URL: apiUrl },
   stdio: 'inherit',

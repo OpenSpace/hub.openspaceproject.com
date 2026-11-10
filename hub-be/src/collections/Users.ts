@@ -35,7 +35,7 @@ export const Users: CollectionConfig = {
     beforeChange: [
       ({ data, operation, req }) => {
         // New accounts are never admins unless an admin or the server's own code (e.g.
-        // `yarn make-admin`) says so. Payload's first-user registration skips access checks,
+        // `npm run make-admin`) says so. Payload's first-user registration skips access checks,
         // so without this whoever registered first on a fresh hub could pick the admin role
         if (
           operation === 'create' &&

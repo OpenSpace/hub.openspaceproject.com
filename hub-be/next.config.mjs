@@ -4,11 +4,11 @@ import { fileURLToPath } from 'url'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // The repo root has its own lockfile, so pin the root Next 16 would otherwise pick
+  // npm workspaces install the packages, including next, in the repo root's node_modules
   turbopack: {
-    root: path.dirname(fileURLToPath(import.meta.url)),
+    root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
   },
-  // The built frontend is copied into public/ (yarn build at the repo root). Any path that isn't
+  // The built frontend is copied into public/ (npm run build at the repo root). Any path that isn't
   // a Payload route (/api, /admin) or a file gets the frontend's index.html, so the frontend's
   // own router handles pages like /items/123
   async rewrites() {

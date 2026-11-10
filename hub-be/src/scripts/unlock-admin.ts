@@ -1,13 +1,14 @@
 // Unlock an account that was locked out after too many failed logins to the admin panel:
-//   yarn unlock-admin you@example.com
+//   npm run unlock-admin -- you@example.com
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
+import type { UserAuthOperations } from '../payload-types'
 
 const run = async () => {
   try {
     const email = process.argv.slice(2).find((arg) => arg.includes('@'))
     if (!email) {
-      console.error('Usage: yarn unlock-admin <email>')
+      console.error('Usage: npm run unlock-admin -- <email>')
       process.exit(1)
     }
 
@@ -30,7 +31,8 @@ const run = async () => {
 
     await payload.unlock({
       collection: 'users',
-      data: { email },
+      // Generated types wrongly require `password` for unlock; Payload ignores it.
+      data: { email } as UserAuthOperations['unlock'],
       overrideAccess: true,
     })
 

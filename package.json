@@ -2,21 +2,20 @@
     "name": "openspace-hub",
     "private": true,
     "license": "MIT",
-    "packageManager": "yarn@4.7.0",
     "workspaces": [
         "hub-be",
         "hub-fe"
     ],
     "scripts": {
-        "dev": "concurrently \"yarn dev:fe\" \"yarn dev:be\"",
-        "dev:fe": "yarn workspace openspace-fe dev",
-        "dev:be": "yarn workspace openspace-hub-be dev",
-        "build": "yarn build:fe && node scripts/copy-frontend.mjs && yarn build:be",
-        "build:fe": "yarn workspace openspace-fe build",
-        "build:be": "yarn workspace openspace-hub-be build",
+        "dev": "concurrently \"npm:dev:fe\" \"npm:dev:be\"",
+        "dev:fe": "npm run dev -w hub-fe",
+        "dev:be": "npm run dev -w hub-be",
+        "build": "npm run build:fe && node scripts/copy-frontend.mjs && npm run build:be",
+        "build:fe": "npm run build -w hub-fe",
+        "build:be": "npm run build -w hub-be",
         "build:local": "node scripts/build-frontend.mjs http://localhost:3000",
         "build:remote": "node scripts/build-frontend.mjs http://hub.openspaceproject.com:3000",
-        "start": "yarn workspace openspace-hub-be start"
+        "start": "npm start -w hub-be"
     },
     "devDependencies": {
         "concurrently": "^8.2.2"

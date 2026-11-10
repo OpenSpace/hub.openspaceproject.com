@@ -1,5 +1,5 @@
 // Make an existing account an admin, e.g. the first one on a fresh hub:
-//   yarn make-admin you@example.com
+//   npm run make-admin -- you@example.com
 // Sign in to the hub first, so the account exists. Accounts made by signing in have a random
 // password, so this also prints a new one for logging in to the admin panel (/admin)
 import { randomBytes } from 'crypto'
@@ -9,7 +9,7 @@ import configPromise from '@payload-config'
 const run = async () => {
   const email = process.argv.slice(2).find((arg) => arg.includes('@'))
   if (!email) {
-    console.error('Usage: yarn make-admin <email>')
+    console.error('Usage: npm run make-admin -- <email>')
     process.exit(1)
   }
 

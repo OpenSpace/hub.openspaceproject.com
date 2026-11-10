@@ -1,8 +1,8 @@
 // Generate a random PAYLOAD_SECRET. Plain Node rather than `payload run`, since the Payload
 // config refuses to load without a secret.
 //
-//   yarn generate:payload-secret                  print a new secret
-//   yarn generate:payload-secret --write [file]   put it in an env file (default .env)
+//   npm run generate:payload-secret                     print a new secret
+//   npm run generate:payload-secret -- --write [file]   put it in an env file (default .env)
 //
 // --write leaves an existing real secret alone unless --force is given: changing it logs out
 // everyone signed in to the admin panel (Firebase logins are unaffected)

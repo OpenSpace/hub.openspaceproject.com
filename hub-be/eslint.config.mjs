@@ -24,7 +24,7 @@ const eslintConfig = [
     },
   },
   {
-    // public/ holds the built frontend (copied in by the root `yarn build`)
+    // public/ holds the built frontend (copied in by the root `npm run build`)
     ignores: ['.next/', 'public/', 'src/payload-types.ts'],
   },
 ]

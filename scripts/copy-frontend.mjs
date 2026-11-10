@@ -9,7 +9,7 @@ const from = path.join(root, 'hub-fe', 'dist')
 const to = path.join(root, 'hub-be', 'public')
 
 if (!fs.existsSync(path.join(from, 'index.html'))) {
-  console.error(`No frontend build in ${from}. Run yarn build:fe first.`)
+  console.error(`No frontend build in ${from}. Run npm run build:fe first.`)
   process.exit(1)
 }
 
