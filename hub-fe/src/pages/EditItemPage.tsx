@@ -61,7 +61,7 @@ export function EditItemPage() {
   if (error) {
     return (
       <Container size="md" py="xl">
-        <Text color="red">{error}</Text>
+        <Text c="red">{error}</Text>
       </Container>
     );
   }

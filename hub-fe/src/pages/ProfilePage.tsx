@@ -185,7 +185,7 @@ function ProfileContent() {
   if (error) {
     return (
       <Container size="xl" py="xl">
-        <Text color="red">{error}</Text>
+        <Text c="red">{error}</Text>
       </Container>
     );
   }

@@ -61,7 +61,6 @@ backup/
 # Project specific
 hub-be/injest/
 hub-be/uploads/
-hub-fe/storybook-static/
 dist/
 hub-be/dist
 hub-fe/dist

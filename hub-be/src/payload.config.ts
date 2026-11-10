@@ -1,7 +1,6 @@
 // storage-adapter-import-placeholder
 import { randomBytes } from 'crypto'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
-import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig, type Payload } from 'payload'
 import { fileURLToPath } from 'url'

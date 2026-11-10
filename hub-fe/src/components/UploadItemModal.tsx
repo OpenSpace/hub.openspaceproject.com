@@ -187,7 +187,7 @@ const UploadItemModal: React.FC<UploadItemModalProps> = ({ opened, onClose }) =>
         onClose={() => setSuccessModalOpened(false)}
         title={uploadSuccess ? 'Upload Successful' : 'Upload Failed'}
       >
-        <Text color={uploadSuccess ? 'green' : 'red'}>{uploadMessage}</Text>
+        <Text c={uploadSuccess ? 'green' : 'red'}>{uploadMessage}</Text>
         <Button onClick={() => setSuccessModalOpened(false)} style={{ marginTop: '10px' }}>
           Close
         </Button>

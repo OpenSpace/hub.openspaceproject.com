@@ -1,8 +1,8 @@
 import {
   CSSVariablesResolver,
-  defaultCssVariablesResolver,
   MantineTheme,
   MantineThemeOverride,
+  v8CssVariablesResolver,
 } from '@mantine/core';
 
 export const theme: MantineThemeOverride = {
@@ -344,9 +344,10 @@ export const theme: MantineThemeOverride = {
 };
 
 // The --hub-color-* variables are the hub's shared palette; use them instead of picking
-// colors by color scheme in components
+// colors by color scheme in components. Based on Mantine 8's variables, which keep the
+// translucent `light` variant colors (e.g. alerts and tag badges)
 export const cssVariablesResolver: CSSVariablesResolver = (mantineTheme) => {
-  const base = defaultCssVariablesResolver(mantineTheme);
+  const base = v8CssVariablesResolver(mantineTheme);
   return {
     ...base,
     light: {
