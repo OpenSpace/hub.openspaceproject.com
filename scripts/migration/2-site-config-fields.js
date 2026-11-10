@@ -16,7 +16,8 @@ const { createRequire } = require('module')
 
 const hubBe = path.resolve(__dirname, '..', '..', 'hub-be')
 const requireFromBackend = createRequire(path.join(hubBe, 'package.json'))
-const { MongoClient } = requireFromBackend('mongodb')
+// npm installs the driver inside mongoose, out of reach of a plain require('mongodb')
+const { MongoClient } = requireFromBackend('mongoose').mongo
 requireFromBackend('dotenv').config({ path: path.join(hubBe, '.env'), quiet: true })
 
 // The types in hub-be/src/itemTypes.ts when this was written
